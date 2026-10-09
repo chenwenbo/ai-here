@@ -13,7 +13,7 @@
 
 Before: select a folder → right-click "New Terminal at Folder" → type `claude` / `codex`. For the desktop apps it's even worse: copy the path, create a project, paste it in.
 
-Now: **right-click the folder → Quick Actions → pick one.** Done.
+Now: **right-click the folder → Services → pick one.** Done.
 
 ### Install
 
@@ -29,7 +29,7 @@ Requirements: macOS 13+ (tested on macOS 26), with [Claude Code](https://docs.cl
 
 | When | Do |
 |---|---|
-| A folder is selected | Right-click → **Quick Actions** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` |
+| A folder is selected | Right-click → **Services** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` |
 | You're already *inside* a folder (nothing selected) | Click the **AI Here** button in the Finder toolbar → pick a tool (also offers "continue last session") |
 | In a terminal | `ai-here claude-cli .`, `ai-here codex-app ~/project`, … |
 
@@ -86,7 +86,7 @@ Installed to: `~/Library/Services/*.workflow`, `~/Library/Application Support/AI
 
 以前：选中文件夹 → 右键用终端打开 → 输入 `claude` / `codex`；桌面版更麻烦，要复制路径、新建项目、再粘贴进去。
 
-现在：**右键文件夹 → 快速操作 → 选一个**，完事。
+现在：**右键文件夹 → 服务 → 选一个**，完事。
 
 ### 安装
 
@@ -102,7 +102,7 @@ cd ai-here
 
 | 场景 | 操作 |
 |---|---|
-| 选中了某个文件夹 | 右键 → **快速操作** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` |
+| 选中了某个文件夹 | 右键 → **服务** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` |
 | 已经在某个文件夹里面（没选中任何东西） | 点 Finder 工具栏上的 **AI Here** 按钮 → 选择工具（也提供“继续上次会话”） |
 | 在终端里 | `ai-here claude-cli .`、`ai-here codex-app ~/项目` 等 |
 
@@ -156,7 +156,7 @@ git pull && ./install.sh   # 更新
 ```
 bin/ai-here               Core launcher; every entry point calls it  核心启动脚本（所有入口最终都调用它）
 src/AIHere.applescript    Finder toolbar button (compiled to AI Here.app)  Finder 工具栏按钮
-install.sh                Generates the 4 Quick Actions, toolbar app, CLI  生成快速操作、工具栏按钮、命令
+install.sh                Generates the 4 Finder services, toolbar app, CLI  生成右键服务、工具栏按钮、命令
 uninstall.sh              Uninstaller  卸载
 config.example            Config template  配置模板
 ```

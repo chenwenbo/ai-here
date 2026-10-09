@@ -1,7 +1,7 @@
 #!/bin/zsh
 # 卸载 AI Here（保留 ~/.config/ai-here/config，如需一并删除请加 --purge）
 for t in "Claude Code（终端）" "Codex（终端）" "Claude Code（桌面版）" "Codex（桌面版）"; do
-  rm -rf "$HOME/Library/Services/$t.workflow" && echo "已移除快速操作：$t"
+  rm -rf "$HOME/Library/Services/$t.workflow" && echo "已移除右键服务：$t"
 done
 rm -rf "$HOME/Applications/AI Here.app" && echo "已移除 AI Here.app"
 link="$HOME/.local/bin/ai-here"

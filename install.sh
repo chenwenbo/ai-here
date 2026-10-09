@@ -1,5 +1,5 @@
 #!/bin/zsh
-# 安装 AI Here：Finder 右键快速操作 + 工具栏按钮 + ai-here 命令
+# 安装 AI Here：Finder 右键服务菜单 + 工具栏按钮 + ai-here 命令
 setopt err_exit no_unset
 
 SRC=${0:A:h}
@@ -41,7 +41,7 @@ if [[ ! -f $CONFIG ]]; then
   echo "    已生成配置文件 $CONFIG"
 fi
 
-echo "==> 生成 Finder 快速操作到 $SERVICES_DIR"
+echo "==> 生成 Finder 右键服务到 $SERVICES_DIR"
 mkdir -p "$SERVICES_DIR"
 # 生成一个 Automator「快速操作」：仅在 Finder 中、对选中的文件夹可用，
 # 内容是一个「运行 Shell 脚本」动作，以参数形式接收所选文件夹。
@@ -234,7 +234,7 @@ echo "==> 刷新系统服务菜单"
 cat <<EOF
 
 安装完成 🎉
-  • 右键任意文件夹 → 快速操作 → Claude Code / Codex（终端 / 桌面版）
+  • 右键任意文件夹 → 服务 → Claude Code / Codex（终端 / 桌面版）
   • 已在某个文件夹里？按住 ⌘ 把 ~/Applications/AI Here.app 拖到 Finder 工具栏，点一下即可
   • 配置（终端选择、命令参数）：$CONFIG
   • 首次使用时 macOS 会询问是否允许控制 iTerm/终端，请点“允许”
