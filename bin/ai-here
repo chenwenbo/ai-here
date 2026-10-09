@@ -1,0 +1,178 @@
+#!/bin/zsh
+# ai-here — 在指定文件夹中打开 Claude Code / Codex（命令行或桌面版）
+#
+# 用法: ai-here <模式> [路径...]
+#   claude-cli       终端里运行 claude
+#   claude-continue  终端里运行 claude --continue（继续该目录上次会话）
+#   codex-cli        终端里运行 codex
+#   codex-resume     终端里运行 codex resume --last
+#   claude-app       Claude 桌面版 Code 标签页新建会话
+#   codex-app        Codex 桌面版打开该工作区
+#   finder           不传路径时，取当前 Finder 窗口所在目录
+# 路径是文件时自动使用其所在文件夹；不传路径时使用当前目录。
+
+setopt no_unset pipe_fail
+export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
+
+AI_HERE_VERSION=1.0.0
+LOG="$HOME/Library/Logs/ai-here.log"
+
+# ---- 默认配置（可在 ~/.config/ai-here/config 覆盖） ----
+TERMINAL_APP=auto          # auto | iTerm | Terminal
+OPEN_IN=window             # window | tab（tab 仅对 iTerm 生效）
+CLAUDE_CMD="claude"
+CODEX_CMD="codex"
+MAX_FOLDERS=6
+
+CONFIG_FILE=${AI_HERE_CONFIG:-$HOME/.config/ai-here/config}
+[[ -f $CONFIG_FILE ]] && source "$CONFIG_FILE"
+
+# Finder 快速操作里 PATH 很精简，补上常见安装位置
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$HOME/.npm-global/bin:$HOME/.bun/bin:$PATH"
+
+log()    { print -r -- "$(date '+%F %T') $*" >>"$LOG" 2>/dev/null }
+notify() {
+  log "NOTICE: $1"
+  MSG="$1" osascript -e 'display notification (system attribute "MSG") with title "AI Here"' >/dev/null 2>&1
+}
+die()    { notify "$1"; exit 1 }
+
+finder_dir() {
+  osascript <<'EOF' 2>/dev/null
+tell application "Finder"
+  try
+    set t to (target of front Finder window) as alias
+  on error
+    set t to (path to desktop folder)
+  end try
+  return POSIX path of t
+end tell
+EOF
+}
+
+# 某些命令在快速操作环境里找不到时，回退到用户的登录 shell 去解析
+resolve_bin() {
+  local name=$1 p
+  p=$(command -v -- "$name" 2>/dev/null) && { print -r -- "$p"; return 0 }
+  p=$("${SHELL:-/bin/zsh}" -ilc "command -v -- ${(q)name}" 2>/dev/null | tail -n1)
+  [[ -n "$p" && -x "$p" ]] && { print -r -- "$p"; return 0 }
+  return 1
+}
+
+pick_terminal() {
+  case "$TERMINAL_APP" in
+    iTerm|iTerm2) print iTerm ;;
+    Terminal)     print Terminal ;;
+    *) if [[ -d /Applications/iTerm.app || -d "$HOME/Applications/iTerm.app" ]]; then print iTerm; else print Terminal; fi ;;
+  esac
+}
+
+# 在新的终端窗口/标签页里：cd 到目录并执行命令。用交互式 shell 运行，
+# 所以 PATH、别名、nvm 等都和你平时手动打开终端一致。
+run_in_terminal() {
+  local dir=$1 cmd=$2
+  local line="cd ${(qq)dir} && clear && $cmd"
+  local term; term=$(pick_terminal)
+  log "terminal=$term dir=$dir cmd=$cmd"
+  if [[ $term == iTerm ]]; then
+    osascript - "$line" "$OPEN_IN" <<'EOF'
+on run argv
+  set cmd to item 1 of argv
+  set openIn to item 2 of argv
+  set wasRunning to application "iTerm" is running
+  tell application "iTerm"
+    activate
+    if not wasRunning then delay 0.8
+    if (count of windows) = 0 then
+      set w to (create window with default profile)
+    else if not wasRunning then
+      set w to current window
+    else if openIn is "tab" then
+      set w to current window
+      tell w to create tab with default profile
+    else
+      set w to (create window with default profile)
+    end if
+    tell current session of w to write text cmd
+  end tell
+end run
+EOF
+  else
+    # Terminal.app 新建标签页需要辅助功能权限，这里统一用新窗口
+    osascript - "$line" <<'EOF'
+on run argv
+  set cmd to item 1 of argv
+  set wasRunning to application "Terminal" is running
+  tell application "Terminal"
+    activate
+    if not wasRunning then
+      delay 0.5
+      try
+        do script cmd in front window
+      on error
+        do script cmd
+      end try
+    else
+      do script cmd
+    end if
+  end tell
+end run
+EOF
+  fi
+}
+
+open_claude_app() {
+  local dir=$1 enc
+  [[ -d /Applications/Claude.app || -d "$HOME/Applications/Claude.app" ]] || die "未找到 Claude 桌面版（/Applications/Claude.app）"
+  enc=$(V="$dir" osascript -l JavaScript -e 'ObjC.import("stdlib"); function run(){return encodeURIComponent($.getenv("V"))}')
+  log "claude-app dir=$dir"
+  open "claude://code/new?folder=${enc}&source=services"
+}
+
+open_codex_app() {
+  local dir=$1 codex
+  codex=$(resolve_bin codex) || die "未找到 codex 命令，无法打开 Codex 桌面版"
+  log "codex-app dir=$dir via $codex"
+  # codex app 会唤起桌面版并打开该工作区；放到后台，避免快速操作一直转圈
+  ( cd "$dir" && "$codex" app "$dir" >>"$LOG" 2>&1 ) &!
+}
+
+# ---- 参数解析 ----
+mode=${1:-}
+[[ -z $mode || $mode == -h || $mode == --help ]] && { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 }
+[[ $mode == -v || $mode == --version ]] && { print "ai-here $AI_HERE_VERSION"; exit 0 }
+shift
+
+typeset -a targets dirs
+if (( $# )); then
+  targets=("$@")
+elif [[ $mode == finder ]]; then
+  targets=("$(finder_dir)")
+else
+  targets=("$PWD")
+fi
+[[ $mode == finder ]] && mode=${AI_HERE_FINDER_MODE:-claude-cli}
+
+typeset -A seen
+for p in "${targets[@]}"; do
+  [[ -z $p ]] && continue
+  [[ -d $p ]] || p=${p:h}            # 选中的是文件 -> 用所在文件夹
+  p=${p:A}                            # 绝对路径、去掉末尾斜杠
+  [[ -d $p ]] || continue
+  (( ${+seen[$p]} )) && continue
+  seen[$p]=1; dirs+=("$p")
+done
+(( ${#dirs} )) || die "没有可打开的文件夹"
+(( ${#dirs} > MAX_FOLDERS )) && { notify "一次最多打开 $MAX_FOLDERS 个文件夹，其余已忽略"; dirs=("${(@)dirs[1,MAX_FOLDERS]}") }
+
+for d in "${dirs[@]}"; do
+  case $mode in
+    claude-cli)      run_in_terminal "$d" "$CLAUDE_CMD" ;;
+    claude-continue) run_in_terminal "$d" "$CLAUDE_CMD --continue" ;;
+    codex-cli)       run_in_terminal "$d" "$CODEX_CMD" ;;
+    codex-resume)    run_in_terminal "$d" "$CODEX_CMD resume --last" ;;
+    claude-app)      open_claude_app "$d" ;;
+    codex-app)       open_codex_app "$d" ;;
+    *) die "未知模式: $mode（可用 claude-cli / codex-cli / claude-app / codex-app）" ;;
+  esac
+done

@@ -1,0 +1,16 @@
+# AI Here 配置（zsh 语法）。修改后立即生效，无需重装。
+
+# 用哪个终端：auto（有 iTerm 用 iTerm，否则用系统终端）| iTerm | Terminal
+TERMINAL_APP=auto
+
+# iTerm 中在新窗口还是新标签页打开：window | tab
+OPEN_IN=window
+
+# 启动命令，可附加参数，例如：
+#   CLAUDE_CMD="claude --model opus"
+#   CODEX_CMD="codex --full-auto"
+CLAUDE_CMD="claude"
+CODEX_CMD="codex"
+
+# 一次最多打开几个文件夹（多选时）
+MAX_FOLDERS=6
