@@ -4,8 +4,8 @@
 
 property launcher : "__LAUNCHER__"
 
-property menuItems : {"Claude Code（终端）", "Codex（终端）", "Claude Code（桌面版）", "Codex（桌面版）", "Claude Code 继续上次会话（终端）", "Codex 继续上次会话（终端）"}
-property menuModes : {"claude-cli", "codex-cli", "claude-app", "codex-app", "claude-continue", "codex-resume"}
+property menuItems : {"Claude Code（终端）", "Codex（终端）", "Claude Code（桌面版）", "Codex（桌面版）", "WorkBuddy", "Claude Code 继续上次会话（终端）", "Codex 继续上次会话（终端）"}
+property menuModes : {"claude-cli", "codex-cli", "claude-app", "codex-app", "workbuddy", "claude-continue", "codex-resume"}
 property lastChoice : "Claude Code（终端）"
 
 on run

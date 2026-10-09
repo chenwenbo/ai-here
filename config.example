@@ -12,5 +12,9 @@ OPEN_IN=window
 CLAUDE_CMD="claude"
 CODEX_CMD="codex"
 
+# WorkBuddy：新建任务时预填的提示词（%s = 文件夹名，只预填不发送），以及欢迎模式 code | work | design
+WORKBUDDY_PROMPT="我们在「%s」这个文件夹里工作，先帮我看看里面有什么。"
+WORKBUDDY_MODE=""
+
 # 一次最多打开几个文件夹（多选时）
 MAX_FOLDERS=6

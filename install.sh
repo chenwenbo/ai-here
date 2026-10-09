@@ -1,8 +1,15 @@
 #!/bin/zsh
-# 安装 AI Here：Finder 右键服务菜单 + 工具栏按钮 + ai-here 命令
+# 安装 AI Here（Claude Code / Codex / WorkBuddy）：Finder 右键服务菜单 + 工具栏按钮 + ai-here 命令
 setopt err_exit no_unset
 
 SRC=${0:A:h}
+WITH_SKILL=0
+for arg in "$@"; do
+  case $arg in
+    --skill) WITH_SKILL=1 ;;
+    -h|--help) print "用法: ./install.sh [--skill]   --skill 同时把 Agent Skill 装进 Claude Code / Codex / WorkBuddy"; exit 0 ;;
+  esac
+done
 INSTALL_DIR="$HOME/Library/Application Support/AIHere"
 SERVICES_DIR="$HOME/Library/Services"
 APP_PATH="$HOME/Applications/AI Here.app"
@@ -16,6 +23,12 @@ typeset -a ACTIONS=(
   "Claude Code（桌面版）" claude-app
   "Codex（桌面版）"       codex-app
 )
+# WorkBuddy 只在已安装时加入右键菜单
+if [[ -d /Applications/WorkBuddy.app ]] || mdfind "kMDItemCFBundleIdentifier == 'com.tencent.workbuddy.mac'" 2>/dev/null | grep -q '\.app$'; then
+  ACTIONS+=("WorkBuddy" workbuddy)
+else
+  rm -rf "$HOME/Library/Services/WorkBuddy.workflow"
+fi
 
 FINDER_PATH=/System/Library/CoreServices/Finder.app
 FINDER_ID=com.apple.finder
@@ -228,13 +241,23 @@ rm -f "$tmp_script"
 [[ -f "$SRC/src/AIHere.icns" ]] && cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/applet.icns"
 touch "$APP_PATH"
 
+if (( WITH_SKILL )); then
+  echo "==> 安装 Agent Skill（skills/ai-here）"
+  for base in "$HOME/.claude/skills" "$HOME/.codex/skills" "$HOME/.workbuddy/skills" "$HOME/.agents/skills"; do
+    [[ -d $base ]] || continue
+    rm -rf "$base/ai-here" && cp -R "$SRC/skills/ai-here" "$base/ai-here"
+    echo "    ✓ $base/ai-here"
+  done
+fi
+
 echo "==> 刷新系统服务菜单"
 /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
 
 cat <<EOF
 
 安装完成 🎉
-  • 右键任意文件夹 → 服务 → Claude Code / Codex（终端 / 桌面版）
+  • 右键任意文件夹 → 服务 → Claude Code / Codex（终端 / 桌面版）/ WorkBuddy
+  • 检查安装状态：ai-here doctor
   • 已在某个文件夹里？按住 ⌘ 把 ~/Applications/AI Here.app 拖到 Finder 工具栏，点一下即可
   • 配置（终端选择、命令参数）：$CONFIG
   • 首次使用时 macOS 会询问是否允许控制 iTerm/终端，请点“允许”
