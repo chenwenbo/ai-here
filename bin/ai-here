@@ -17,7 +17,7 @@
 setopt no_unset pipe_fail
 export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
 
-AI_HERE_VERSION=1.3.0
+AI_HERE_VERSION=1.3.1
 AI_HERE_SCRIPT_DIR=${0:A:h}
 LOG="$HOME/Library/Logs/ai-here.log"
 
@@ -41,7 +41,9 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$HOME/.npm-global
 log()    { print -r -- "$(date '+%F %T') $*" >>"$LOG" 2>/dev/null }
 notify() {
   log "NOTICE: $1"
-  MSG="$1" osascript -e 'display notification (system attribute "MSG") with title "AI Here"' >/dev/null 2>&1
+  MSG="$1" osascript -e 'display notification (system attribute "MSG") with title "AI Here"' >/dev/null 2>&1 || log "通知未送达: $1"
+  # macOS 通知是附加反馈，不改变已完成操作的成功状态。
+  return 0
 }
 die()    { print -ru2 -- "$1"; notify "$1"; exit 1 }
 

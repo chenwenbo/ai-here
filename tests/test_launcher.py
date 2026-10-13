@@ -114,6 +114,23 @@ class LauncherTest(unittest.TestCase):
         self.assertIn("fake-claude", result.stdout)
         self.assertIn("符号链接", result.stderr)
 
+    def test_toolbar_init_success_is_independent_of_notifications(self):
+        self.stub("osascript", '#!/bin/sh\nexit 17\n')
+        result = self.call("handoff-init", self.workspace)
+        self.assertTrue((self.workspace / ".ai-here" / "index.md").exists())
+        self.assertTrue((self.workspace / "AGENTS.md").exists())
+        self.assertIn("index.md", result.stdout)
+
+    def test_toolbar_init_failure_still_returns_nonzero(self):
+        self.stub("osascript", '#!/bin/sh\nexit 17\n')
+        outside = self.base / "outside"
+        outside.mkdir()
+        (self.workspace / ".ai-here").symlink_to(outside, target_is_directory=True)
+        result = subprocess.run(["/bin/zsh", str(LAUNCHER), "handoff-init", str(self.workspace)],
+                                env=self.env, text=True, capture_output=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((outside / "index.md").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

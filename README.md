@@ -233,7 +233,7 @@ ai-here handoff export <path>              # 输出摘要 / export summary
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.3.0","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.3.1","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
  "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","handoff_runtime":"/usr/bin/python3","services":["Claude Code CLI","…","WorkBuddy"]}
 ```

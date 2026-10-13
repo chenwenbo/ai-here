@@ -1,6 +1,6 @@
 # 跨 Agent 工作交接指南
 
-AI Here 1.3.0 将工作交接保存在同一工作目录，供 Codex、Claude Code、WorkBuddy 和 ChatGPT 接续。当前 Agent 或用户写入记录，下一位 Agent 阅读并核验；完整聊天历史仍由各产品管理。
+AI Here 1.3.1 将工作交接保存在同一工作目录，供 Codex、Claude Code、WorkBuddy 和 ChatGPT 接续。当前 Agent 或用户写入记录，下一位 Agent 阅读并核验；完整聊天历史仍由各产品管理。
 
 ## 一次启用
 
@@ -109,6 +109,8 @@ ai-here handoff init ~/私密项目 --instructions --ignore
 ## 后续扩展与验证边界
 
 本版实现文件交接与启动入口。多个客户端需要实时查询、更新同一份状态时，可在该存储之上加 MCP 资源与工具接口。真实客户端是否读取、是否写回取决于其版本、权限与 Agent 执行情况，文件管理与启动提示不构成这些行为的保证。
+
+2026-10-13 的 [端到端验收报告](e2e-handoff-2026-10-13.md) 记录了实际界面测试、Codex 自动写交接，以及 WorkBuddy 会话超时和 ChatGPT UI 限制；完整三客户端闭环仍待验证。
 
 ## 参考资料
 
