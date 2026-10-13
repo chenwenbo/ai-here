@@ -1,2 +1,7 @@
 .DS_Store
 *.app/
+__pycache__/
+*.pyc
+
+# AI Here local handoffs
+/.ai-here/

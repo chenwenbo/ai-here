@@ -49,13 +49,13 @@ on chooseAndLaunch(targetPaths)
 	if (count of targetPaths) = 0 then return
 	set label to item 1 of targetPaths
 	if (count of targetPaths) > 1 then set label to label & " 等 " & (count of targetPaths) & " 个文件夹"
-	set choice to my chooseWithIcons(label)
+	set choice to my chooseWithIcons(label, targetPaths)
 	if choice is missing value then return
-	set lastChoice to choice
 	set mode to ""
 	repeat with i from 1 to count of menuItems
 		if item i of menuItems is choice then set mode to item i of menuModes
 	end repeat
+	if mode does not start with "handoff-" then set lastChoice to choice
 	set cmd to quoted form of launcher & " " & mode
 	repeat with p in targetPaths
 		set cmd to cmd & " " & quoted form of (p as text)
@@ -68,14 +68,35 @@ on chooseAndLaunch(targetPaths)
 end chooseAndLaunch
 
 -- 使用原生 AppKit 列表：每一行都有图标，支持鼠标选择、方向键、回车及 Esc。
-on chooseWithIcons(folderLabel)
+on chooseWithIcons(folderLabel, targetPaths)
+	set menuItems to {"Claude Code CLI", "Codex CLI", "Claude Code App", "Codex App", "WorkBuddy", "Claude Code CLI · 继续上次会话", "Codex CLI · 继续上次会话"}
+	set menuModes to {"claude-cli", "codex-cli", "claude-app", "codex-app", "workbuddy", "claude-continue", "codex-resume"}
 	set iconNames to {"claude", "codex", "claude", "codex", "workbuddy", "claude", "codex"}
+	set readyCount to 0
+	repeat with targetPath in targetPaths
+		if (current application's NSFileManager's defaultManager()'s fileExistsAtPath:((targetPath as text) & "/.ai-here/index.md")) as boolean then set readyCount to readyCount + 1
+	end repeat
+	set end of menuItems to "启用 / 修复工作交接"
+	set end of menuModes to "handoff-init"
+	set end of iconNames to "handoff"
+	if readyCount = (count of targetPaths) then
+		set end of menuItems to "查看工作交接"
+		set end of menuModes to "handoff-open"
+		set end of iconNames to "handoff"
+		set end of menuItems to "复制交接摘要 · 用于 ChatGPT 等"
+		set end of menuModes to "handoff-copy"
+		set end of iconNames to "copy"
+		set folderLabel to folderLabel & linefeed & "工作交接已启用。当前 Agent 结束前写入，下个 Agent 读取。"
+	else
+		set folderLabel to folderLabel & linefeed & "启用工作交接后，其他 Agent 可接续这个工作空间的进展。"
+	end if
+	set listHeight to 352
 	set menuIcons to current application's NSMutableArray's array()
 	repeat with iconName in iconNames
 		menuIcons's addObject:(my toolIcon(iconName as text))
 	end repeat
 
-	set menuTable to current application's NSTableView's alloc()'s initWithFrame:{{0, 0}, {460, 308}}
+	set menuTable to current application's NSTableView's alloc()'s initWithFrame:{{0, 0}, {460, listHeight}}
 	menuTable's setHeaderView:(missing value)
 	menuTable's setRowHeight:44
 	menuTable's setIntercellSpacing:{0, 0}
@@ -99,9 +120,9 @@ on chooseWithIcons(folderLabel)
 	end repeat
 	menuTable's selectRowIndexes:(current application's NSIndexSet's indexSetWithIndex:selectedIndex) byExtendingSelection:false
 
-	set listView to current application's NSScrollView's alloc()'s initWithFrame:{{0, 0}, {460, 308}}
+	set listView to current application's NSScrollView's alloc()'s initWithFrame:{{0, 0}, {460, listHeight}}
 	listView's setDocumentView:menuTable
-	listView's setHasVerticalScroller:false
+	listView's setHasVerticalScroller:((count of menuItems) > 8)
 	listView's setBorderType:(current application's NSBezelBorder)
 
 	set chooser to current application's NSAlert's alloc()'s init()
@@ -111,7 +132,7 @@ on chooseWithIcons(folderLabel)
 	set resourcesPath to current application's NSBundle's mainBundle()'s resourcePath() as text
 	set appIcon to current application's NSImage's alloc()'s initWithContentsOfFile:(resourcesPath & "/AIHere.icns")
 	if appIcon is not missing value then chooser's setIcon:appIcon
-	set confirmButton to chooser's addButtonWithTitle:"打开"
+	set confirmButton to chooser's addButtonWithTitle:"确定"
 	chooser's addButtonWithTitle:"取消"
 	(chooser's |window|())'s setTitle:"AI Here"
 	(chooser's |window|())'s makeFirstResponder:menuTable
@@ -137,6 +158,8 @@ on toolIcon(iconName)
 	if iconImage is missing value then
 		set symbolName to "terminal"
 		if iconName is "workbuddy" then set symbolName to "person.crop.square"
+		if iconName is "handoff" then set symbolName to "doc.text"
+		if iconName is "copy" then set symbolName to "doc.on.clipboard"
 		set iconImage to current application's NSImage's imageWithSystemSymbolName:symbolName accessibilityDescription:iconName
 	end if
 	return iconImage

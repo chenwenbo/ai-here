@@ -38,7 +38,10 @@ echo "==> 安装启动脚本到 $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cp "$SRC/bin/ai-here" "$LAUNCHER"
 chmod +x "$LAUNCHER"
+mkdir -p "$INSTALL_DIR/lib"
+cp "$SRC/lib/handoff.py" "$INSTALL_DIR/lib/handoff.py"
 
+mkdir -p "$HOME/.local/bin"
 if [[ -d "$HOME/.local/bin" ]]; then
   link="$HOME/.local/bin/ai-here"
   if [[ ! -e $link || -L $link ]]; then
@@ -246,8 +249,8 @@ rm -f "$tmp_script"
 cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/AIHere.icns"
 plutil -replace CFBundleIconFile -string AIHere "$APP_PATH/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleShortVersionString -string 1.2.3 "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleVersion -string 1.2.3 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleShortVersionString -string 1.3.0 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleVersion -string 1.3.0 "$APP_PATH/Contents/Info.plist"
 osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Resources/ToolIcons"
 # 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
 codesign --force --sign - "$APP_PATH" >/dev/null
@@ -263,6 +266,7 @@ cat <<EOF
   • 检查安装状态：ai-here doctor
   • 已在某个文件夹里？按住 ⌘ 把 ~/Applications/AI Here.app 拖到 Finder 工具栏，点一下即可
   • 配置（终端选择、命令参数）：$CONFIG
+  • 工作交接：工具栏选“启用工作交接”，或 ai-here handoff init <目录> --instructions
   • 首次使用时 macOS 会询问是否允许控制 iTerm/终端，请点“允许”
   • 若右键菜单暂未出现：系统设置 → 隐私与安全性 → 扩展 → Finder（访达）中勾选，或执行 killall Finder
 EOF

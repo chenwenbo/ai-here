@@ -18,3 +18,6 @@ WORKBUDDY_MODE=""
 
 # 一次最多打开几个文件夹（多选时）
 MAX_FOLDERS=6
+
+# 已启用工作交接的目录：在终端显示读取提示，WorkBuddy 预填提示词追加交接路径
+HANDOFF_HINTS=1

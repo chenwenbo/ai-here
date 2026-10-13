@@ -7,7 +7,7 @@
 
 [English](#english) · [中文](#中文) · [Agent 接入 / For AI agents](#agent-接入--for-ai-agents)
 
-跨 Codex、Claude Code、WorkBuddy 和 ChatGPT 的工作交接方案见 [调研稿](docs/cross-agent-handoff.md)。
+跨 Codex、Claude Code、WorkBuddy 和 ChatGPT 的工作交接用法见 [工作交接指南](docs/cross-agent-handoff.md)。
 
 ---
 
@@ -42,7 +42,21 @@ Menu labels: `CLI` = command-line tool, `App` = desktop app. The `WorkBuddy` ite
 
 To add the toolbar button, hold **⌘** and drag `~/Applications/AI Here.app` onto any Finder window's toolbar. You can also drop folders onto it.
 
-The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside all seven actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Double-click an action to open it directly, or use arrow keys to select, Return to open, and Esc to cancel.
+The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside the seven launch actions, plus workspace handoff actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Double-click an action to open it directly, or use arrow keys to select, Return to confirm, and Esc to cancel.
+
+### Workspace handoffs
+
+Pick **启用 / 修复工作交接** (Enable / repair handoff) in the toolbar chooser, or run:
+
+```bash
+ai-here handoff init ~/project --instructions
+```
+
+This creates `.ai-here/index.md`, a handoff template and a record folder. `--instructions` appends a small managed block to `AGENTS.md` and `CLAUDE.md`, preserving existing instructions. It asks the agent to read relevant records at the start and write a brief, evidence-based handoff at the end. Add `--ignore` to keep `.ai-here/` out of Git in private projects. Handoff commands require Python 3.9+ and no third-party packages.
+
+Once enabled, the chooser offers **查看工作交接** (View handoff) and **复制交接摘要 · 用于 ChatGPT 等** (Copy summary for ChatGPT). WorkBuddy's pre-filled prompt points to the index; CLI sessions show a reading reminder. For ordinary ChatGPT conversations, paste the copied summary; a local Work session can read the same workspace files when access is granted. Closing an app does not capture or synchronize its conversation history.
+
+See the [handoff guide](docs/cross-agent-handoff.md) for record creation, editing, privacy and tool boundaries.
 
 ### What each mode does
 
@@ -67,6 +81,7 @@ CLAUDE_CMD="claude"    # e.g. "claude --model opus"
 CODEX_CMD="codex"
 WORKBUDDY_PROMPT="我们在「%s」这个文件夹里工作，先帮我看看里面有什么。"   # %s = folder name
 WORKBUDDY_MODE=""      # code | work | design (empty = WorkBuddy decides)
+HANDOFF_HINTS=1        # reading reminders for enabled workspaces
 ```
 
 ### Keyboard shortcuts (optional)
@@ -120,7 +135,21 @@ ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 
 `WorkBuddy` 菜单项只在检测到已安装 WorkBuddy 时才会添加。工具栏按钮的安装：按住 **⌘** 把 `~/Applications/AI Here.app` 拖到任意 Finder 窗口的工具栏上。也可以把文件夹直接拖到这个按钮上。
 
-工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。打开后的七个选项都有对应的 Claude、Codex 或 WorkBuddy 图标，安装时从本机应用读取；未安装的工具使用 macOS 系统图标。双击选项即可直接打开，也支持方向键选择、回车打开及 Esc 取消。
+工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。七个启动选项都有对应的 Claude、Codex 或 WorkBuddy 图标，并提供工作交接入口。安装时从本机应用读取图标；未安装的工具使用 macOS 系统图标。双击选项即可执行，也支持方向键选择、回车确认及 Esc 取消。
+
+### 跨 Agent 工作交接
+
+点工具栏的 **启用 / 修复工作交接**，或者运行：
+
+```bash
+ai-here handoff init ~/项目 --instructions
+```
+
+系统会创建 `.ai-here/index.md`、交接模板与记录目录。`--instructions` 在保留原有内容的前提下，给 `AGENTS.md`、`CLAUDE.md` 追加简短入口：让 Agent 开始时阅读相关交接，结束前写入已完成事项、证据与下一步。私密项目可加 `--ignore` 将 `.ai-here/` 排除在 Git 之外。交接命令需要 Python 3.9+，无需安装第三方包。
+
+启用后，工具栏提供 **查看工作交接** 和 **复制交接摘要 · 用于 ChatGPT 等**。WorkBuddy 的预填提示词会带读取路径，CLI 会显示交接提醒。普通 ChatGPT 对话粘贴摘要即可；有本地目录权限的 Work 会话可读取同一份文件。关掉软件不会自动采集或同步聊天历史，当前 Agent 需在任务结束前写交接。
+
+写入、编辑、刷新和各工具的接入边界见[工作交接指南](docs/cross-agent-handoff.md)。
 
 ### 各模式做了什么
 
@@ -145,6 +174,7 @@ CLAUDE_CMD="claude"    # 例如 "claude --model opus"
 CODEX_CMD="codex"
 WORKBUDDY_PROMPT="我们在「%s」这个文件夹里工作，先帮我看看里面有什么。"   # %s = 文件夹名
 WORKBUDDY_MODE=""      # code | work | design（留空由 WorkBuddy 决定）
+HANDOFF_HINTS=1        # 已启用交接的工作空间显示读取提醒
 ```
 
 ### 键盘快捷键（可选）
@@ -194,14 +224,18 @@ Agent 调用时用这几个命令就够了 / Everything an agent needs:
 ai-here doctor --json                       # 机器可读的安装状态 / machine-readable status
 ai-here <mode> <绝对路径/absolute path>      # 打开文件夹 / open a folder
 AI_HERE_DRY_RUN=1 ai-here claude-app <path> # 只打印深链、不打开 / print the deep link only
+ai-here handoff init <path> --instructions # 启用工作空间交接 / enable handoffs
+ai-here handoff add <path> --title "任务标题" --agent codex --status completed --body-file -
+ai-here handoff list <path>                # 查看记录 / list records
+ai-here handoff export <path>              # 输出摘要 / export summary
 ```
 
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.2.2","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.3.0","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
- "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","services":["Claude Code CLI","…","WorkBuddy"]}
+ "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","handoff_runtime":"/usr/bin/python3","services":["Claude Code CLI","…","WorkBuddy"]}
 ```
 
 字段为空字符串表示没找到该工具。模式列表同上文：`claude-cli`、`claude-continue`、`codex-cli`、`codex-resume`、`claude-app`、`codex-app`、`workbuddy`。
@@ -223,6 +257,8 @@ src/AIHere.applescript    Finder toolbar button (compiled to AI Here.app)  Finde
 src/AIHere.icns           App icon (all macOS sizes)  应用图标
 src/AIHere.png            App icon source / preview  应用图标原图
 src/export-tool-icons.js  Copies locally installed tool icons into the app  提取本机工具图标
+lib/handoff.py            Workspace handoff records, index and exports  工作交接管理
+tests/                    Handoff and launcher integration checks  交接与启动器测试
 install.sh                Generates the Finder services, toolbar app and CLI  安装
 uninstall.sh              Uninstaller  卸载
 config.example            Config template  配置模板
