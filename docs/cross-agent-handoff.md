@@ -2,6 +2,8 @@
 
 AI Here 1.3.1 将工作交接保存在同一工作目录，供 Codex、Claude Code、WorkBuddy 和 ChatGPT 接续。当前 Agent 或用户写入记录，下一位 Agent 阅读并核验；完整聊天历史仍由各产品管理。
 
+按具体任务选择操作路径，见 [用户场景与操作路径](handoff-user-scenarios.md)。
+
 ## 一次启用
 
 在 Finder 工具栏的 AI Here 选择器中选 **启用 / 修复工作交接**，或运行：

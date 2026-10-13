@@ -9,6 +9,8 @@
 
 跨 Codex、Claude Code、WorkBuddy 和 ChatGPT 的工作交接用法见 [工作交接指南](docs/cross-agent-handoff.md)。
 
+首次启用、切换 Agent、ChatGPT 结果带回和隔天接续等具体步骤，见 [交接用户场景与操作路径](docs/handoff-user-scenarios.md)。
+
 ---
 
 ## English
