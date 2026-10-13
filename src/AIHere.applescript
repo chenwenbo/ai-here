@@ -9,9 +9,9 @@ use scripting additions
 
 property launcher : "__LAUNCHER__"
 
-property menuItems : {"Claude Code（终端）", "Codex（终端）", "Claude Code（桌面版）", "Codex（桌面版）", "WorkBuddy", "Claude Code 继续上次会话（终端）", "Codex 继续上次会话（终端）"}
+property menuItems : {"Claude Code CLI", "Codex CLI", "Claude Code App", "Codex App", "WorkBuddy", "Claude Code CLI · 继续上次会话", "Codex CLI · 继续上次会话"}
 property menuModes : {"claude-cli", "codex-cli", "claude-app", "codex-app", "workbuddy", "claude-continue", "codex-resume"}
-property lastChoice : "Claude Code（终端）"
+property lastChoice : "Claude Code CLI"
 property menuIcons : missing value
 property menuTable : missing value
 

@@ -18,10 +18,10 @@ LAUNCHER="$INSTALL_DIR/ai-here"
 
 # 标题 => 模式（标题即右键菜单里显示的名字）
 typeset -a ACTIONS=(
-  "Claude Code（终端）"   claude-cli
-  "Codex（终端）"         codex-cli
-  "Claude Code（桌面版）" claude-app
-  "Codex（桌面版）"       codex-app
+  "Claude Code CLI"   claude-cli
+  "Codex CLI"         codex-cli
+  "Claude Code App" claude-app
+  "Codex App"       codex-app
 )
 # WorkBuddy 只在已安装时加入右键菜单
 if [[ -d /Applications/WorkBuddy.app ]] || mdfind "kMDItemCFBundleIdentifier == 'com.tencent.workbuddy.mac'" 2>/dev/null | grep -q '\.app$'; then
@@ -230,6 +230,11 @@ for title mode in "${ACTIONS[@]}"; do
   echo "    ✓ $title"
 done
 
+# 清理旧版名称，避免更新后出现重复的 Finder 服务。
+for old_title in "Claude Code（终端）" "Codex（终端）" "Claude Code（桌面版）" "Codex（桌面版）"; do
+  rm -rf "$SERVICES_DIR/$old_title.workflow"
+done
+
 echo "==> 编译 Finder 工具栏按钮 $APP_PATH"
 mkdir -p "${APP_PATH:h}"
 tmp_script=$(mktemp -t aihere)
@@ -242,8 +247,8 @@ rm -f "$tmp_script"
 cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/AIHere.icns"
 plutil -replace CFBundleIconFile -string AIHere "$APP_PATH/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleShortVersionString -string 1.2.0 "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleVersion -string 1.2.0 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleShortVersionString -string 1.2.1 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleVersion -string 1.2.1 "$APP_PATH/Contents/Info.plist"
 osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Resources/ToolIcons"
 # 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
 codesign --force --sign - "$APP_PATH" >/dev/null
@@ -264,7 +269,7 @@ echo "==> 刷新系统服务菜单"
 cat <<EOF
 
 安装完成 🎉
-  • 右键任意文件夹 → 服务 → Claude Code / Codex（终端 / 桌面版）/ WorkBuddy
+  • 右键任意文件夹 → 服务 → Claude Code CLI / Codex CLI / Claude Code App / Codex App / WorkBuddy
   • 检查安装状态：ai-here doctor
   • 已在某个文件夹里？按住 ⌘ 把 ~/Applications/AI Here.app 拖到 Finder 工具栏，点一下即可
   • 配置（终端选择、命令参数）：$CONFIG

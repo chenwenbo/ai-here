@@ -16,7 +16,7 @@
 setopt no_unset pipe_fail
 export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
 
-AI_HERE_VERSION=1.2.0
+AI_HERE_VERSION=1.2.1
 LOG="$HOME/Library/Logs/ai-here.log"
 
 # ---- 默认配置（可在 ~/.config/ai-here/config 覆盖） ----
@@ -172,7 +172,7 @@ open_codex_app() {
 }
 
 # ---- doctor：给人和 Agent 看的安装状态 ----
-SERVICE_TITLES=("Claude Code（终端）" "Codex（终端）" "Claude Code（桌面版）" "Codex（桌面版）" "WorkBuddy")
+SERVICE_TITLES=("Claude Code CLI" "Codex CLI" "Claude Code App" "Codex App" "WorkBuddy")
 
 doctor() {
   local json=0; [[ ${1:-} == --json ]] && json=1

@@ -32,11 +32,11 @@ Requirements: macOS 13+ (tested on macOS 26), with [Claude Code](https://docs.cl
 
 | When | Do |
 |---|---|
-| A folder is selected | Right-click → **Services** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` / `WorkBuddy` |
+| A folder is selected | Right-click → **Services** → `Claude Code CLI` / `Codex CLI` / `Claude Code App` / `Codex App` / `WorkBuddy` |
 | You're already *inside* a folder (nothing selected) | Click the **AI Here** button in the Finder toolbar → pick a tool (also offers "continue last session") |
 | In a terminal, or from an AI agent | `ai-here claude-cli .`, `ai-here codex-app ~/project`, `ai-here workbuddy ~/project`, … |
 
-Menu labels: `终端` = Terminal (CLI), `桌面版` = Desktop app. The `WorkBuddy` item is only added when WorkBuddy is installed. To use English labels, edit the `ACTIONS` list at the top of `install.sh` (and the matching names in `uninstall.sh`), then re-run `./install.sh`.
+Menu labels: `CLI` = command-line tool, `App` = desktop app. The `WorkBuddy` item is only added when WorkBuddy is installed. To use English labels, edit the `ACTIONS` list at the top of `install.sh` (and the matching names in `uninstall.sh`), then re-run `./install.sh`.
 
 To add the toolbar button, hold **⌘** and drag `~/Applications/AI Here.app` onto any Finder window's toolbar. You can also drop folders onto it.
 
@@ -69,7 +69,7 @@ WORKBUDDY_MODE=""      # code | work | design (empty = WorkBuddy decides)
 
 ### Keyboard shortcuts (optional)
 
-System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders. Assign a shortcut to e.g. `Claude Code（终端）`, then select a folder and press it.
+System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders. Assign a shortcut to e.g. `Claude Code CLI`, then select a folder and press it.
 
 ### Update / uninstall
 
@@ -111,7 +111,7 @@ ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 
 | 场景 | 操作 |
 |---|---|
-| 选中了某个文件夹 | 右键 → **服务** → `Claude Code（终端）` / `Codex（终端）` / `Claude Code（桌面版）` / `Codex（桌面版）` / `WorkBuddy` |
+| 选中了某个文件夹 | 右键 → **服务** → `Claude Code CLI` / `Codex CLI` / `Claude Code App` / `Codex App` / `WorkBuddy` |
 | 已经在某个文件夹里面（没选中任何东西） | 点 Finder 工具栏上的 **AI Here** 按钮 → 选择工具（也提供“继续上次会话”） |
 | 在终端里，或让 AI Agent 调用 | `ai-here claude-cli .`、`ai-here codex-app ~/项目`、`ai-here workbuddy ~/项目` 等 |
 
@@ -146,7 +146,7 @@ WORKBUDDY_MODE=""      # code | work | design（留空由 WorkBuddy 决定）
 
 ### 键盘快捷键（可选）
 
-系统设置 → 键盘 → 键盘快捷键 → 服务 → 文件和文件夹，给 `Claude Code（终端）` 等设置快捷键，之后选中文件夹按快捷键即可。
+系统设置 → 键盘 → 键盘快捷键 → 服务 → 文件和文件夹，给 `Claude Code CLI` 等设置快捷键，之后选中文件夹按快捷键即可。
 
 ### 更新 / 卸载
 
@@ -213,9 +213,9 @@ AI_HERE_DRY_RUN=1 ai-here claude-app <path> # 只打印深链、不打开 / prin
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.2.0","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.2.1","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
- "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","services":["Claude Code（终端）","…","WorkBuddy"]}
+ "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","services":["Claude Code CLI","…","WorkBuddy"]}
 ```
 
 字段为空字符串表示没找到该工具。模式列表同上文：`claude-cli`、`claude-continue`、`codex-cli`、`codex-resume`、`claude-app`、`codex-app`、`workbuddy`。
