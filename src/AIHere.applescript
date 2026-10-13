@@ -59,7 +59,11 @@ on chooseAndLaunch(targetPaths)
 	repeat with p in targetPaths
 		set cmd to cmd & " " & quoted form of (p as text)
 	end repeat
-	do shell script cmd & " >/dev/null 2>&1"
+	try
+		do shell script cmd & " 2>&1"
+	on error errorMessage
+		display dialog errorMessage with title "AI Here 无法打开" buttons {"好"} default button "好" with icon caution
+	end try
 end chooseAndLaunch
 
 -- 使用原生 AppKit 列表：每一行都有图标，支持鼠标选择、方向键、回车及 Esc。

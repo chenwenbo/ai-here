@@ -246,8 +246,8 @@ rm -f "$tmp_script"
 cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/AIHere.icns"
 plutil -replace CFBundleIconFile -string AIHere "$APP_PATH/Contents/Info.plist"
 plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleShortVersionString -string 1.2.2 "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleVersion -string 1.2.2 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleShortVersionString -string 1.2.3 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleVersion -string 1.2.3 "$APP_PATH/Contents/Info.plist"
 osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Resources/ToolIcons"
 # 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
 codesign --force --sign - "$APP_PATH" >/dev/null

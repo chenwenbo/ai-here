@@ -16,7 +16,7 @@
 setopt no_unset pipe_fail
 export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
 
-AI_HERE_VERSION=1.2.2
+AI_HERE_VERSION=1.2.3
 LOG="$HOME/Library/Logs/ai-here.log"
 
 # ---- 默认配置（可在 ~/.config/ai-here/config 覆盖） ----
@@ -40,7 +40,7 @@ notify() {
   log "NOTICE: $1"
   MSG="$1" osascript -e 'display notification (system attribute "MSG") with title "AI Here"' >/dev/null 2>&1
 }
-die()    { notify "$1"; exit 1 }
+die()    { print -ru2 -- "$1"; notify "$1"; exit 1 }
 
 finder_dir() {
   osascript <<'EOF' 2>/dev/null
@@ -58,10 +58,36 @@ EOF
 # 某些命令在快速操作环境里找不到时，回退到用户的登录 shell 去解析
 resolve_bin() {
   local name=$1 p
-  p=$(command -v -- "$name" 2>/dev/null) && { print -r -- "$p"; return 0 }
+  p=$(command -v -- "$name" 2>/dev/null)
+  [[ -n "$p" && -x "$p" ]] && { print -r -- "$p"; return 0 }
   p=$("${SHELL:-/bin/zsh}" -ilc "command -v -- ${(q)name}" 2>/dev/null | tail -n1)
   [[ -n "$p" && -x "$p" ]] && { print -r -- "$p"; return 0 }
+  # Finder 不继承 Codex 桌面版为 Agent 设置的 PATH；使用已安装应用内置的 CLI。
+  if [[ $name == codex ]]; then
+    local app candidate
+    typeset -a apps=(/Applications/Codex.app /Applications/ChatGPT.app "$HOME/Applications/Codex.app" "$HOME/Applications/ChatGPT.app")
+    app=$(app_path com.openai.codex "" || true)
+    [[ -n "$app" ]] && apps+=("$app")
+    for app in "${apps[@]}"; do
+      for candidate in "$app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex" "$app/Contents/Resources/codex"; do
+        [[ -x "$candidate" ]] && { print -r -- "$candidate"; return 0 }
+      done
+    done
+  fi
   return 1
+}
+
+# 保留终端里的 codex 别名和自定义参数；终端 PATH 中没有命令时使用解析出的绝对路径。
+run_codex_terminal() {
+  local dir=$1 suffix=${2:-} codex cmd
+  cmd="$CODEX_CMD$suffix"
+  if [[ $CODEX_CMD == codex || $CODEX_CMD == 'codex '* ]]; then
+    codex=$(resolve_bin codex || true)
+    if [[ -n "$codex" ]]; then
+      cmd="if command -v codex >/dev/null 2>&1; then $cmd; else ${(qq)codex}${CODEX_CMD#codex}$suffix; fi"
+    fi
+  fi
+  run_in_terminal "$dir" "$cmd"
 }
 
 pick_terminal() {
@@ -165,7 +191,7 @@ open_workbuddy() {
 
 open_codex_app() {
   local dir=$1 codex
-  codex=$(resolve_bin codex) || die "未找到 codex 命令，无法打开 Codex 桌面版"
+  codex=$(resolve_bin codex) || die "未找到 Codex CLI 或桌面版内置命令，请安装 Codex 或检查应用位置。"
   log "codex-app dir=$dir via $codex"
   # codex app 会唤起桌面版并打开该工作区；放到后台，避免快速操作一直转圈
   ( cd "$dir" && "$codex" app "$dir" >>"$LOG" 2>&1 ) &!
@@ -237,8 +263,8 @@ for d in "${dirs[@]}"; do
   case $mode in
     claude-cli)      run_in_terminal "$d" "$CLAUDE_CMD" ;;
     claude-continue) run_in_terminal "$d" "$CLAUDE_CMD --continue" ;;
-    codex-cli)       run_in_terminal "$d" "$CODEX_CMD" ;;
-    codex-resume)    run_in_terminal "$d" "$CODEX_CMD resume --last" ;;
+    codex-cli)       run_codex_terminal "$d" ;;
+    codex-resume)    run_codex_terminal "$d" " resume --last" ;;
     claude-app)      open_claude_app "$d" ;;
     codex-app)       open_codex_app "$d" ;;
     workbuddy)       open_workbuddy "$d" ;;

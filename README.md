@@ -82,6 +82,7 @@ Installed to: `~/Library/Services/*.workflow`, `~/Library/Application Support/AI
 
 ### Troubleshooting
 
+- **Codex is installed but Finder cannot find `codex`**: AI Here also checks the CLI bundled inside the installed Codex desktop app. CLI modes preserve your terminal's `codex` command and configured arguments, and use the bundled executable when it is absent from PATH.
 - **The menu items don't show up**: System Settings → Privacy & Security → Extensions → Finder, and enable them. Or run `killall Finder`.
 - **"… wants to control iTerm/Terminal" on first use**: click Allow. If you clicked Don't Allow, re-enable it under System Settings → Privacy & Security → Automation.
 - **Two Claude desktop entries in the menu**: recent Claude desktop versions ship their own `New Claude Code Session Here`, which does the same thing. Turn one of them off under System Settings → Keyboard → Keyboard Shortcuts → Services.
@@ -159,6 +160,7 @@ git pull && ./install.sh   # 更新
 
 ### 常见问题
 
+- **已安装 Codex，但 Finder 找不到 `codex` 命令**：AI Here 会自动查找 Codex 桌面应用内置的 CLI。终端模式优先保留原有 `codex` 命令及配置参数，PATH 中没有命令时使用应用内置的可执行文件。
 - **右键菜单里没出现**：系统设置 → 隐私与安全性 → 扩展 → 访达（Finder）里勾选；或执行 `killall Finder`。
 - **第一次使用弹出“想要控制 iTerm/终端”**：点“允许”。如果误点了拒绝：系统设置 → 隐私与安全性 → 自动化 中重新勾选。
 - **右键菜单有两个 Claude 桌面版入口**：较新版本的 Claude 桌面版自带 `New Claude Code Session Here`，功能相同，可在 系统设置 → 键盘 → 键盘快捷键 → 服务 中取消勾选其中一个。
