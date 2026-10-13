@@ -232,13 +232,21 @@ done
 
 echo "==> 编译 Finder 工具栏按钮 $APP_PATH"
 mkdir -p "${APP_PATH:h}"
-tmp_script=$(mktemp -t aihere).applescript
+tmp_script=$(mktemp -t aihere)
+trap 'rm -f "$tmp_script"' EXIT
 sed "s|__LAUNCHER__|$LAUNCHER|" "$SRC/src/AIHere.applescript" >"$tmp_script"
 rm -rf "$APP_PATH"
 osacompile -o "$APP_PATH" "$tmp_script"
 rm -f "$tmp_script"
-# 让它以菜单栏外的轻量方式运行，并使用自带图标（若有）
-[[ -f "$SRC/src/AIHere.icns" ]] && cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/applet.icns"
+# Droplet 的默认图标名是 droplet，不是 applet；显式设置避免图标不生效。
+cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/AIHere.icns"
+plutil -replace CFBundleIconFile -string AIHere "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleShortVersionString -string 1.2.0 "$APP_PATH/Contents/Info.plist"
+plutil -replace CFBundleVersion -string 1.2.0 "$APP_PATH/Contents/Info.plist"
+osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Resources/ToolIcons"
+# 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
+codesign --force --sign - "$APP_PATH" >/dev/null
 touch "$APP_PATH"
 
 if (( WITH_SKILL )); then

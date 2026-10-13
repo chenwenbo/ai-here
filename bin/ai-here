@@ -16,7 +16,7 @@
 setopt no_unset pipe_fail
 export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
 
-AI_HERE_VERSION=1.1.0
+AI_HERE_VERSION=1.2.0
 LOG="$HOME/Library/Logs/ai-here.log"
 
 # ---- 默认配置（可在 ~/.config/ai-here/config 覆盖） ----

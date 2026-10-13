@@ -1,5 +1,7 @@
 # AI Here
 
+<img src="src/AIHere.png" width="128" height="128" alt="AI Here app icon">
+
 **Right-click any folder in macOS Finder to open it in Claude Code, Codex or WorkBuddy — CLI or desktop app.**
 **在 macOS Finder 里右键文件夹，一键用 Claude Code / Codex / WorkBuddy 打开 —— 命令行版或桌面版都行。**
 
@@ -37,6 +39,8 @@ Requirements: macOS 13+ (tested on macOS 26), with [Claude Code](https://docs.cl
 Menu labels: `终端` = Terminal (CLI), `桌面版` = Desktop app. The `WorkBuddy` item is only added when WorkBuddy is installed. To use English labels, edit the `ACTIONS` list at the top of `install.sh` (and the matching names in `uninstall.sh`), then re-run `./install.sh`.
 
 To add the toolbar button, hold **⌘** and drag `~/Applications/AI Here.app` onto any Finder window's toolbar. You can also drop folders onto it.
+
+The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside all seven actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Use arrow keys to select, Return to open, or Esc to cancel.
 
 ### What each mode does
 
@@ -112,6 +116,8 @@ ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 | 在终端里，或让 AI Agent 调用 | `ai-here claude-cli .`、`ai-here codex-app ~/项目`、`ai-here workbuddy ~/项目` 等 |
 
 `WorkBuddy` 菜单项只在检测到已安装 WorkBuddy 时才会添加。工具栏按钮的安装：按住 **⌘** 把 `~/Applications/AI Here.app` 拖到任意 Finder 窗口的工具栏上。也可以把文件夹直接拖到这个按钮上。
+
+工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。打开后的七个选项都有对应的 Claude、Codex 或 WorkBuddy 图标，安装时从本机应用读取；未安装的工具使用 macOS 系统图标。支持方向键选择、回车打开及 Esc 取消。
 
 ### 各模式做了什么
 
@@ -207,7 +213,7 @@ AI_HERE_DRY_RUN=1 ai-here claude-app <path> # 只打印深链、不打开 / prin
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.1.0","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.2.0","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
  "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","services":["Claude Code（终端）","…","WorkBuddy"]}
 ```
@@ -228,6 +234,9 @@ An empty string means the tool was not found. Modes are listed above.
 ```
 bin/ai-here               Core launcher; every entry point calls it  核心启动脚本（所有入口最终都调用它）
 src/AIHere.applescript    Finder toolbar button (compiled to AI Here.app)  Finder 工具栏按钮
+src/AIHere.icns           App icon (all macOS sizes)  应用图标
+src/AIHere.png            App icon source / preview  应用图标原图
+src/export-tool-icons.js  Copies locally installed tool icons into the app  提取本机工具图标
 skills/ai-here/SKILL.md   Agent Skill for Claude Code / Codex / WorkBuddy  Agent 技能说明
 install.sh                Generates the Finder services, toolbar app, CLI (--skill: Agent Skill)  安装
 uninstall.sh              Uninstaller  卸载
