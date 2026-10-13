@@ -7,6 +7,8 @@
 
 [English](#english) · [中文](#中文) · [Agent 接入 / For AI agents](#agent-接入--for-ai-agents)
 
+跨 Codex、Claude Code、WorkBuddy 和 ChatGPT 的工作交接方案见 [调研稿](docs/cross-agent-handoff.md)。
+
 ---
 
 ## English
@@ -40,7 +42,7 @@ Menu labels: `CLI` = command-line tool, `App` = desktop app. The `WorkBuddy` ite
 
 To add the toolbar button, hold **⌘** and drag `~/Applications/AI Here.app` onto any Finder window's toolbar. You can also drop folders onto it.
 
-The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside all seven actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Use arrow keys to select, Return to open, or Esc to cancel.
+The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside all seven actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Double-click an action to open it directly, or use arrow keys to select, Return to open, and Esc to cancel.
 
 ### What each mode does
 
@@ -118,7 +120,7 @@ ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 
 `WorkBuddy` 菜单项只在检测到已安装 WorkBuddy 时才会添加。工具栏按钮的安装：按住 **⌘** 把 `~/Applications/AI Here.app` 拖到任意 Finder 窗口的工具栏上。也可以把文件夹直接拖到这个按钮上。
 
-工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。打开后的七个选项都有对应的 Claude、Codex 或 WorkBuddy 图标，安装时从本机应用读取；未安装的工具使用 macOS 系统图标。支持方向键选择、回车打开及 Esc 取消。
+工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。打开后的七个选项都有对应的 Claude、Codex 或 WorkBuddy 图标，安装时从本机应用读取；未安装的工具使用 macOS 系统图标。双击选项即可直接打开，也支持方向键选择、回车打开及 Esc 取消。
 
 ### 各模式做了什么
 

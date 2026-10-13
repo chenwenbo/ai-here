@@ -14,6 +14,7 @@ property menuModes : {"claude-cli", "codex-cli", "claude-app", "codex-app", "wor
 property lastChoice : "Claude Code CLI"
 property menuIcons : missing value
 property menuTable : missing value
+property confirmButton : missing value
 
 on run
 	set targetPaths to my currentFinderFolders()
@@ -82,6 +83,8 @@ on chooseWithIcons(folderLabel)
 	menuTable's setAllowsEmptySelection:false
 	menuTable's setSelectionHighlightStyle:(current application's NSTableViewSelectionHighlightStyleRegular)
 	menuTable's setAccessibilityLabel:"选择 AI 工具"
+	menuTable's setTarget:me
+	menuTable's setDoubleAction:"confirmDoubleClick:"
 
 	set toolColumn to current application's NSTableColumn's alloc()'s initWithIdentifier:"tool"
 	toolColumn's setWidth:460
@@ -108,18 +111,25 @@ on chooseWithIcons(folderLabel)
 	set resourcesPath to current application's NSBundle's mainBundle()'s resourcePath() as text
 	set appIcon to current application's NSImage's alloc()'s initWithContentsOfFile:(resourcesPath & "/AIHere.icns")
 	if appIcon is not missing value then chooser's setIcon:appIcon
-	chooser's addButtonWithTitle:"打开"
+	set confirmButton to chooser's addButtonWithTitle:"打开"
 	chooser's addButtonWithTitle:"取消"
 	(chooser's |window|())'s setTitle:"AI Here"
 	(chooser's |window|())'s makeFirstResponder:menuTable
 	current application's NSApplication's sharedApplication()'s activateIgnoringOtherApps:true
 	set response to chooser's runModal()
 	set selectedRow to menuTable's selectedRow() as integer
+	set confirmButton to missing value
 	set menuTable to missing value
 	set menuIcons to missing value
 	if response as integer is not 1000 or selectedRow < 0 then return missing value
 	return item (selectedRow + 1) of menuItems
 end chooseWithIcons
+
+-- 双击所选行时点击同一个“打开”按钮，复用原有的确认与启动流程。
+on confirmDoubleClick_(sender)
+	if (sender's selectedRow() as integer) < 0 then return
+	if confirmButton is not missing value then confirmButton's performClick:sender
+end confirmDoubleClick_
 
 on toolIcon(iconName)
 	set resourcesPath to current application's NSBundle's mainBundle()'s resourcePath() as text
