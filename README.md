@@ -22,7 +22,7 @@ Now: **right-click the folder → Services → pick one.** Done.
 ```bash
 git clone https://github.com/chenwenbo/ai-here.git
 cd ai-here
-./install.sh            # add --skill to also install the Agent Skill (see below)
+./install.sh
 ai-here doctor          # check what was found and installed
 ```
 
@@ -78,7 +78,7 @@ git pull && ./install.sh   # update
 ./uninstall.sh             # uninstall; add --purge to also delete the config
 ```
 
-Installed to: `~/Library/Services/*.workflow`, `~/Library/Application Support/AIHere/ai-here`, `~/Applications/AI Here.app`, `~/.local/bin/ai-here` (and `<agent>/skills/ai-here` with `--skill`). Log: `~/Library/Logs/ai-here.log`.
+Installed to: `~/Library/Services/*.workflow`, `~/Library/Application Support/AIHere/ai-here`, `~/Applications/AI Here.app`, `~/.local/bin/ai-here`. Log: `~/Library/Logs/ai-here.log`.
 
 ### Troubleshooting
 
@@ -101,7 +101,7 @@ Installed to: `~/Library/Services/*.workflow`, `~/Library/Application Support/AI
 ```bash
 git clone https://github.com/chenwenbo/ai-here.git
 cd ai-here
-./install.sh            # 加 --skill 会同时安装 Agent Skill（见下文）
+./install.sh
 ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 ```
 
@@ -155,7 +155,7 @@ git pull && ./install.sh   # 更新
 ./uninstall.sh             # 卸载，加 --purge 同时删除配置
 ```
 
-安装位置：`~/Library/Services/*.workflow`、`~/Library/Application Support/AIHere/ai-here`、`~/Applications/AI Here.app`、`~/.local/bin/ai-here`（加 `--skill` 时还有 `<agent>/skills/ai-here`）。日志：`~/Library/Logs/ai-here.log`。
+安装位置：`~/Library/Services/*.workflow`、`~/Library/Application Support/AIHere/ai-here`、`~/Applications/AI Here.app`、`~/.local/bin/ai-here`。日志：`~/Library/Logs/ai-here.log`。
 
 ### 常见问题
 
@@ -177,30 +177,12 @@ AI Here is built to be installed and driven by AI agents (Claude Code, Codex, Wo
 ```text
 请帮我安装 AI Here（https://github.com/chenwenbo/ai-here）：
 1. 把仓库 clone 到 ~/ai-here（已存在就 git pull）
-2. 在仓库目录运行 ./install.sh --skill
+2. 在仓库目录运行 ./install.sh
 3. 运行 ai-here doctor，告诉我检测到了哪些工具、右键菜单里装了哪些选项
 4. 提醒我：第一次使用时 macOS 会询问是否允许控制 iTerm/终端，要点“允许”
 ```
 
-### 2. Agent Skill
-
-仓库自带一个 Agent Skill：[`skills/ai-here/SKILL.md`](skills/ai-here/SKILL.md)。装上之后，你可以直接对 Agent 说「在 Codex 桌面版里打开这个项目」「新开一个终端，用 Claude Code 跑 ~/xxx」，Agent 就知道该怎么调用。
-The repo ships an Agent Skill. With it installed, you can tell your agent "open this project in the Codex desktop app" and it knows what to run.
-
-```bash
-./install.sh --skill
-```
-
-`--skill` 会把它复制到本机已存在的这些目录 / copies it into whichever of these exist:
-
-| Agent | Skill 目录 |
-|---|---|
-| Claude Code | `~/.claude/skills/ai-here` |
-| Codex | `~/.codex/skills/ai-here` |
-| WorkBuddy | `~/.workbuddy/skills/ai-here` |
-| 通用 / shared | `~/.agents/skills/ai-here` |
-
-### 3. 命令行接口 / CLI for agents
+### 2. 命令行接口 / CLI for agents
 
 Agent 调用时用这几个命令就够了 / Everything an agent needs:
 
@@ -237,8 +219,7 @@ src/AIHere.applescript    Finder toolbar button (compiled to AI Here.app)  Finde
 src/AIHere.icns           App icon (all macOS sizes)  应用图标
 src/AIHere.png            App icon source / preview  应用图标原图
 src/export-tool-icons.js  Copies locally installed tool icons into the app  提取本机工具图标
-skills/ai-here/SKILL.md   Agent Skill for Claude Code / Codex / WorkBuddy  Agent 技能说明
-install.sh                Generates the Finder services, toolbar app, CLI (--skill: Agent Skill)  安装
+install.sh                Generates the Finder services, toolbar app and CLI  安装
 uninstall.sh              Uninstaller  卸载
 config.example            Config template  配置模板
 ```

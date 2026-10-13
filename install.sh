@@ -3,11 +3,10 @@
 setopt err_exit no_unset
 
 SRC=${0:A:h}
-WITH_SKILL=0
 for arg in "$@"; do
   case $arg in
-    --skill) WITH_SKILL=1 ;;
-    -h|--help) print "用法: ./install.sh [--skill]   --skill 同时把 Agent Skill 装进 Claude Code / Codex / WorkBuddy"; exit 0 ;;
+    -h|--help) print "用法: ./install.sh"; exit 0 ;;
+    *) print -u2 -- "不支持的参数：$arg。用法: ./install.sh"; exit 2 ;;
   esac
 done
 INSTALL_DIR="$HOME/Library/Application Support/AIHere"
@@ -253,15 +252,6 @@ osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Reso
 # 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
 codesign --force --sign - "$APP_PATH" >/dev/null
 touch "$APP_PATH"
-
-if (( WITH_SKILL )); then
-  echo "==> 安装 Agent Skill（skills/ai-here）"
-  for base in "$HOME/.claude/skills" "$HOME/.codex/skills" "$HOME/.workbuddy/skills" "$HOME/.agents/skills"; do
-    [[ -d $base ]] || continue
-    rm -rf "$base/ai-here" && cp -R "$SRC/skills/ai-here" "$base/ai-here"
-    echo "    ✓ $base/ai-here"
-  done
-fi
 
 echo "==> 刷新系统服务菜单"
 /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
