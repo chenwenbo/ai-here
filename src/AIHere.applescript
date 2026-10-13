@@ -73,26 +73,18 @@ on chooseWithIcons(folderLabel)
 	set menuTable to current application's NSTableView's alloc()'s initWithFrame:{{0, 0}, {460, 308}}
 	menuTable's setHeaderView:(missing value)
 	menuTable's setRowHeight:44
-	menuTable's setIntercellSpacing:{8, 0}
+	menuTable's setIntercellSpacing:{0, 0}
 	menuTable's setAllowsMultipleSelection:false
 	menuTable's setAllowsEmptySelection:false
 	menuTable's setSelectionHighlightStyle:(current application's NSTableViewSelectionHighlightStyleRegular)
 	menuTable's setAccessibilityLabel:"选择 AI 工具"
 
-	set iconColumn to current application's NSTableColumn's alloc()'s initWithIdentifier:"icon"
-	iconColumn's setWidth:40
-	iconColumn's setEditable:false
-	set iconCell to current application's NSImageCell's alloc()'s init()
-	iconCell's setImageScaling:(current application's NSImageScaleProportionallyUpOrDown)
-	iconColumn's setDataCell:iconCell
-	menuTable's addTableColumn:iconColumn
-
-	set titleColumn to current application's NSTableColumn's alloc()'s initWithIdentifier:"title"
-	titleColumn's setWidth:400
-	titleColumn's setEditable:false
-	(titleColumn's dataCell())'s setFont:(current application's NSFont's systemFontOfSize:14)
-	menuTable's addTableColumn:titleColumn
+	set toolColumn to current application's NSTableColumn's alloc()'s initWithIdentifier:"tool"
+	toolColumn's setWidth:460
+	toolColumn's setEditable:false
+	menuTable's addTableColumn:toolColumn
 	menuTable's setDataSource:me
+	menuTable's setDelegate:me
 	menuTable's reloadData()
 	set selectedIndex to 0
 	repeat with i from 1 to count of menuItems
@@ -141,6 +133,33 @@ on numberOfRowsInTableView_(aTable)
 end numberOfRowsInTableView_
 
 on tableView_objectValueForTableColumn_row_(aTable, aColumn, rowIndex)
-	if (aColumn's identifier() as text) is "icon" then return menuIcons's objectAtIndex:rowIndex
 	return item ((rowIndex as integer) + 1) of menuItems
 end tableView_objectValueForTableColumn_row_
+
+-- 图标和文字共享同一个行视图，以 centerY 约束对齐，避免文字贴在行顶。
+on tableView_viewForTableColumn_row_(aTable, aColumn, rowIndex)
+	set rowView to current application's NSTableCellView's alloc()'s initWithFrame:{{0, 0}, {460, 44}}
+	set iconView to current application's NSImageView's alloc()'s initWithFrame:{{0, 0}, {32, 32}}
+	iconView's setTranslatesAutoresizingMaskIntoConstraints:false
+	iconView's setImageScaling:(current application's NSImageScaleProportionallyUpOrDown)
+	iconView's setImage:(menuIcons's objectAtIndex:rowIndex)
+	rowView's addSubview:iconView
+	rowView's setImageView:iconView
+
+	set toolLabel to item ((rowIndex as integer) + 1) of menuItems
+	set toolLabelView to current application's NSTextField's labelWithString:toolLabel
+	toolLabelView's setTranslatesAutoresizingMaskIntoConstraints:false
+	toolLabelView's setFont:(current application's NSFont's systemFontOfSize:14)
+	rowView's addSubview:toolLabelView
+	rowView's setTextField:toolLabelView
+
+	current application's NSLayoutConstraint's activateConstraints:{¬
+		(iconView's leadingAnchor()'s constraintEqualToAnchor:(rowView's leadingAnchor()) |constant|:12), ¬
+		(iconView's centerYAnchor()'s constraintEqualToAnchor:(rowView's centerYAnchor())), ¬
+		(iconView's widthAnchor()'s constraintEqualToConstant:32), ¬
+		(iconView's heightAnchor()'s constraintEqualToConstant:32), ¬
+		(toolLabelView's leadingAnchor()'s constraintEqualToAnchor:(iconView's trailingAnchor()) |constant|:12), ¬
+		(toolLabelView's trailingAnchor()'s constraintEqualToAnchor:(rowView's trailingAnchor()) |constant|:-12), ¬
+		(toolLabelView's centerYAnchor()'s constraintEqualToAnchor:(rowView's centerYAnchor()))}
+	return rowView
+end tableView_viewForTableColumn_row_

@@ -195,7 +195,7 @@ AI_HERE_DRY_RUN=1 ai-here claude-app <path> # 只打印深链、不打开 / prin
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.2.1","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.2.2","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
  "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","services":["Claude Code CLI","…","WorkBuddy"]}
 ```
