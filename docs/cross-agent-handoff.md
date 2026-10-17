@@ -1,12 +1,12 @@
 # 跨 Agent 工作交接指南
 
-AI Here 1.3.1 将工作交接保存在同一工作目录，供 Codex、Claude Code、WorkBuddy 和 ChatGPT 接续。当前 Agent 或用户写入记录，下一位 Agent 阅读并核验；完整聊天历史仍由各产品管理。
+AI Here 1.5.0 将工作交接保存在同一工作目录，供 Codex、Claude Code、WorkBuddy 和 ChatGPT 接续。当前 Agent 或用户写入记录，下一位 Agent 阅读并核验；完整聊天历史仍由各产品管理。
 
 按具体任务选择操作路径，见 [用户场景与操作路径](handoff-user-scenarios.md)。
 
 ## 一次启用
 
-在 Finder 工具栏的 AI Here 选择器中选 **启用 / 修复工作交接**，或运行：
+桌面端选择 Agent 的“总结并接续”，由接收 Agent 按内置技能核验并保存交接。需要单独启用读写规则时，在终端运行：
 
 ```bash
 ai-here handoff init ~/项目 --instructions
@@ -67,7 +67,7 @@ EOF
 | Codex CLI / App | `AGENTS.md` 指向索引；CLI 同时显示阅读提醒 | 阅读后核对文件与 Git 状态；`resume` 仍续接 Codex 自己的会话 |
 | Claude Code CLI / App | `CLAUDE.md` 指向同一索引；CLI 显示提醒 | 使用 Claude Code 项目说明能力；`--continue` 仍续接 Claude 自己的会话 |
 | WorkBuddy | 预填提示词追加索引路径和结束前写交接的要求 | 用户发送后由 Agent 阅读；启动 URL 只带路径，不含交接正文 |
-| ChatGPT 普通对话 | 点 **复制交接摘要 · 用于 ChatGPT 等**，粘贴到对话 | 无本地权限时，接续结果需复制到本地后写入交接 |
+| ChatGPT 普通对话 | 运行 `ai-here handoff copy ~/项目`，粘贴到对话 | 无本地权限时，接续结果需复制到本地后写入交接 |
 | ChatGPT 桌面 Work | 在授权目录中读取同一文件，或粘贴摘要 | 取决于本地目录权限；AI Here 没有自动创建 ChatGPT Work 会话 |
 
 从普通 ChatGPT 带回结果时，将其交接正文保存为本地 Markdown 后运行：
@@ -77,7 +77,7 @@ ai-here handoff add ~/项目 --title "需求分析结果" --agent ChatGPT \
   --status active --body-file ~/Downloads/chatgpt-handoff.md
 ```
 
-`HANDOFF_HINTS=0` 可关闭终端提醒及 WorkBuddy 追加提示，项目说明中的交接入口仍保留。未启用的目录不会因启动工具自动生成记录。读取提示失败会报告问题，工具仍可打开。
+`HANDOFF_HINTS=0` 可关闭终端提醒及 WorkBuddy 追加提示，项目说明中的交接入口仍保留。直接启动不会给未启用的目录创建记录；“总结并接续”只在接收 Agent 实际执行技能时建立必要记录。读取提示失败会报告问题，工具仍可打开。
 
 ## 查看、复制与维护
 
@@ -92,7 +92,7 @@ ai-here handoff prompt .                   # 输出简短读取/写入提示
 ai-here handoff init .                     # 刷新最近清单，保留手工状态
 ```
 
-摘要默认包含索引和最近 5 条正文，上限 12,000 字符；达到上限会明确提示截断，来源路径与时间随记录提供。选择器多选工作空间时，“复制交接摘要”会合并各目录摘要。
+摘要默认包含索引和最近 5 条正文，上限 12,000 字符；达到上限会明确提示截断，来源路径与时间随记录提供。需要合并多个工作目录时，可使用 CLI 的 `handoff-copy` 兼容入口；极简面板仅启动一个目录。
 
 可编辑 Markdown 正文、状态或删除记录，再运行 `init` 刷新清单。首行 JSON 注释保存 ID、标题、工具和创建时间，请保留合法格式；损坏记录会警告并跳过，原文件不会被删除。更推荐追加更正记录以便追溯。
 

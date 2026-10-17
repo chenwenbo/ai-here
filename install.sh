@@ -17,6 +17,7 @@ LAUNCHER="$INSTALL_DIR/ai-here"
 
 # 标题 => 模式（标题即右键菜单里显示的名字）
 typeset -a ACTIONS=(
+  "AI Here · 带上下文启动" compose
   "Claude Code CLI"   claude-cli
   "Codex CLI"         codex-cli
   "Claude Code App" claude-app
@@ -40,6 +41,9 @@ cp "$SRC/bin/ai-here" "$LAUNCHER"
 chmod +x "$LAUNCHER"
 mkdir -p "$INSTALL_DIR/lib"
 cp "$SRC/lib/handoff.py" "$INSTALL_DIR/lib/handoff.py"
+cp "$SRC/lib/task_request.py" "$INSTALL_DIR/lib/task_request.py"
+mkdir -p "$INSTALL_DIR/skills/ai-here-handoff"
+cp "$SRC/skills/ai-here-handoff/SKILL.md" "$INSTALL_DIR/skills/ai-here-handoff/SKILL.md"
 
 mkdir -p "$HOME/.local/bin"
 if [[ -d "$HOME/.local/bin" ]]; then
@@ -61,7 +65,12 @@ mkdir -p "$SERVICES_DIR"
 # 生成一个 Automator「快速操作」：仅在 Finder 中、对选中的文件夹可用，
 # 内容是一个「运行 Shell 脚本」动作，以参数形式接收所选文件夹。
 write_workflow() {
-  local title=$1 mode=$2 dir=$3
+  local title=$1 mode=$2 dir=$3 input_type=com.apple.Automator.fileSystemObject.folder send_type=public.folder
+  # 统一面板入口接收文件和文件夹；原工具服务保留文件夹快捷启动语义。
+  if [[ $mode == compose ]]; then
+    input_type=com.apple.Automator.fileSystemObject
+    send_type=public.item
+  fi
   local script; script=$(xml_escape "\"\$HOME/Library/Application Support/AIHere/ai-here\" $mode \"\$@\"")
   local name; name=$(xml_escape "$title")
   mkdir -p "$dir/Contents"
@@ -88,7 +97,7 @@ write_workflow() {
 			</dict>
 			<key>NSSendFileTypes</key>
 			<array>
-				<string>public.folder</string>
+				<string>$send_type</string>
 			</array>
 		</dict>
 	</array>
@@ -195,7 +204,7 @@ EOF
 		<key>applicationPath</key>
 		<string>$FINDER_PATH</string>
 		<key>inputTypeIdentifier</key>
-		<string>com.apple.Automator.fileSystemObject.folder</string>
+		<string>$input_type</string>
 		<key>outputTypeIdentifier</key>
 		<string>com.apple.Automator.nothing</string>
 		<key>presentationMode</key>
@@ -207,7 +216,7 @@ EOF
 		<key>serviceApplicationPath</key>
 		<string>$FINDER_PATH</string>
 		<key>serviceInputTypeIdentifier</key>
-		<string>com.apple.Automator.fileSystemObject.folder</string>
+		<string>$input_type</string>
 		<key>serviceOutputTypeIdentifier</key>
 		<string>com.apple.Automator.nothing</string>
 		<key>serviceProcessesInput</key>
@@ -239,21 +248,46 @@ done
 
 echo "==> 编译 Finder 工具栏按钮 $APP_PATH"
 mkdir -p "${APP_PATH:h}"
-tmp_script=$(mktemp -t aihere)
-trap 'rm -f "$tmp_script"' EXIT
+command -v swiftc >/dev/null || { print -ru2 -- "构建原生界面需要 Apple Command Line Tools（swiftc）。"; exit 1 }
+# Build and sign first so a compiler failure leaves the installed app intact.
+native_stage=$(mktemp -d "${APP_PATH:h}/.ai-here-build.XXXXXXXX")
+tmp_script="$native_stage/AIHere.applescript"
+build_app="$native_stage/AI Here.app"
+trap 'rm -rf "$native_stage"' EXIT
 sed "s|__LAUNCHER__|$LAUNCHER|" "$SRC/src/AIHere.applescript" >"$tmp_script"
-rm -rf "$APP_PATH"
-osacompile -o "$APP_PATH" "$tmp_script"
+osacompile -o "$build_app" "$tmp_script"
 rm -f "$tmp_script"
 # Droplet 的默认图标名是 droplet，不是 applet；显式设置避免图标不生效。
-cp "$SRC/src/AIHere.icns" "$APP_PATH/Contents/Resources/AIHere.icns"
-plutil -replace CFBundleIconFile -string AIHere "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleShortVersionString -string 1.3.1 "$APP_PATH/Contents/Info.plist"
-plutil -replace CFBundleVersion -string 1.3.1 "$APP_PATH/Contents/Info.plist"
-osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$APP_PATH/Contents/Resources/ToolIcons"
+cp "$SRC/src/AIHere.icns" "$build_app/Contents/Resources/AIHere.icns"
+plutil -replace CFBundleIconFile -string AIHere "$build_app/Contents/Info.plist"
+plutil -replace CFBundleIdentifier -string io.github.chenwenbo.ai-here "$build_app/Contents/Info.plist"
+plutil -replace CFBundleShortVersionString -string 1.7.1 "$build_app/Contents/Info.plist"
+plutil -replace CFBundleVersion -string 1.7.1 "$build_app/Contents/Info.plist"
+osascript -l JavaScript "$SRC/src/export-tool-icons.js" "$build_app/Contents/Resources/ToolIcons"
+native_bundle="$build_app/Contents/Resources/NativeUI.bundle"
+mkdir -p "$native_bundle/Contents/MacOS"
+cat > "$native_bundle/Contents/Info.plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>AIHereUI</string>
+<key>CFBundleIdentifier</key><string>io.github.chenwenbo.ai-here.native-ui</string>
+<key>CFBundlePackageType</key><string>BNDL</string>
+<key>CFBundleVersion</key><string>1.7.1</string>
+<key>NSPrincipalClass</key><string>AIHerePanelController</string>
+</dict></plist>
+EOF
+swiftc -emit-library -module-name AIHereUI -target "$(uname -m)-apple-macosx13.0" \
+  "$SRC/src/AIHereUI.swift" -o "$native_bundle/Contents/MacOS/AIHereUI"
+codesign --force --sign - "$native_bundle" >/dev/null
 # 图标及 Info.plist 改动发生在编译之后，更新本地临时签名。
-codesign --force --sign - "$APP_PATH" >/dev/null
+codesign --force --sign - "$build_app" >/dev/null
+codesign --verify --strict "$build_app"
+if [[ -d "$APP_PATH" ]]; then mv "$APP_PATH" "$native_stage/previous.app"; fi
+if ! mv "$build_app" "$APP_PATH"; then
+  [[ -d "$native_stage/previous.app" ]] && mv "$native_stage/previous.app" "$APP_PATH"
+  exit 1
+fi
 touch "$APP_PATH"
 
 echo "==> 刷新系统服务菜单"
@@ -264,9 +298,10 @@ cat <<EOF
 安装完成 🎉
   • 右键任意文件夹 → 服务 → Claude Code CLI / Codex CLI / Claude Code App / Codex App / WorkBuddy
   • 检查安装状态：ai-here doctor
+  • 选中文件 / 文件夹 → 服务 → AI Here · 带上下文启动，选 Agent 直接开始或总结并接续
   • 已在某个文件夹里？按住 ⌘ 把 ~/Applications/AI Here.app 拖到 Finder 工具栏，点一下即可
   • 配置（终端选择、命令参数）：$CONFIG
-  • 工作交接：工具栏选“启用工作交接”，或 ai-here handoff init <目录> --instructions
+  • 总结并接续：Agent 使用内置 handoff 技能核验项目并保存交接；桌面工具自动预填提示，确认后发送
   • 首次使用时 macOS 会询问是否允许控制 iTerm/终端，请点“允许”
   • 若右键菜单暂未出现：系统设置 → 隐私与安全性 → 扩展 → Finder（访达）中勾选，或执行 killall Finder
 EOF

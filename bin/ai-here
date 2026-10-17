@@ -12,13 +12,16 @@
 #   finder           不传路径时，取当前 Finder 窗口所在目录
 #   doctor [--json]  检查各工具与右键菜单的安装状态（适合 Agent 调用）
 #   handoff <命令> [目录]  init / add / list / show / export / prompt / open / copy
+#   task <命令>          start / summarize / context / prepare / launch
+#   compose [路径...]    打开 Agent 面板：直接开始或总结并接续
 # 路径是文件时自动使用其所在文件夹；不传路径时使用当前目录。
 
 setopt no_unset pipe_fail
 export LANG=${LANG:-en_US.UTF-8} LC_CTYPE=${LC_CTYPE:-en_US.UTF-8}   # 快速操作环境没有 LANG，中文路径需要 UTF-8
 
-AI_HERE_VERSION=1.3.1
+AI_HERE_VERSION=1.7.1
 AI_HERE_SCRIPT_DIR=${0:A:h}
+AI_HERE_LAUNCHER_PATH=${0:A}
 LOG="$HOME/Library/Logs/ai-here.log"
 
 # ---- 默认配置（可在 ~/.config/ai-here/config 覆盖） ----
@@ -54,6 +57,27 @@ run_handoff() {
   [[ -f "$lib_dir/handoff.py" ]] || { print -ru2 -- "交接模块缺失，请重新运行 install.sh"; return 1 }
   python=$(command -v python3) || { print -ru2 -- "工作交接需要 Python 3，请安装后重试。"; return 1 }
   "$python" "$lib_dir/handoff.py" "$@"
+}
+
+run_task() {
+  local lib_dir="$AI_HERE_SCRIPT_DIR/lib" python
+  [[ -f "$lib_dir/task_request.py" ]] || lib_dir="${AI_HERE_SCRIPT_DIR:h}/lib"
+  [[ -f "$lib_dir/task_request.py" ]] || { print -ru2 -- "任务模块缺失，请重新运行 install.sh"; return 1 }
+  python=$(command -v python3) || { print -ru2 -- "带上下文启动需要 Python 3，请安装后重试。"; return 1 }
+  AI_HERE_LAUNCHER="$AI_HERE_LAUNCHER_PATH" "$python" "$lib_dir/task_request.py" "$@"
+}
+
+# 文本在终端执行时从私有任务快照读取，作为单个参数传递，不作为 shell 源码执行。
+# 命令和日志只含快照路径，避免长提示触及 AppleScript 参数长度与日志泄漏。
+task_cli_suffix() {
+  local tool=${1:-claude-cli} image_args=""
+  [[ -n ${AI_HERE_TASK_PROMPT_FILE:-} ]] || return 0
+  [[ -f "$AI_HERE_TASK_PROMPT_FILE" && -r "$AI_HERE_TASK_PROMPT_FILE" ]] || { print -ru2 -- "任务提示文件不可读取"; return 1 }
+  if [[ $tool == codex-cli && -n ${AI_HERE_TASK_REQUEST_FILE:-} ]]; then
+    image_args=$(run_task cli-image-args --request "$AI_HERE_TASK_REQUEST_FILE") || return $?
+  fi
+  [[ -n $image_args ]] && image_args=" $image_args"
+  print -r -- "$image_args -- \"\$(cat -- ${(qq)AI_HERE_TASK_PROMPT_FILE})\""
 }
 
 handoff_prompt() {
@@ -151,32 +175,33 @@ pick_terminal() {
 run_in_terminal() {
   local dir=$1 cmd=$2
   local hint; hint=$(handoff_prompt "$dir") || return $?
-  local line="cd ${(qq)dir} && clear && "
+  # Use the shell builtin so a user alias/function cannot redirect the launch.
+  # clear is cosmetic: a missing TERM must not prevent the Agent from starting.
+  local line="builtin cd -- ${(qq)dir} && { clear 2>/dev/null || true; "
   [[ -n $hint ]] && line+="printf '%s\\n' ${(qq)hint} && "
-  line+="$cmd"
+  line+="$cmd; }"
   [[ -n ${AI_HERE_DRY_RUN:-} ]] && { print -r -- "$line"; return 0 }
   local term; term=$(pick_terminal)
   log "terminal=$term dir=$dir cmd=$cmd"
   if [[ $term == iTerm ]]; then
-    osascript - "$line" "$OPEN_IN" <<'EOF'
+    # Start the login shell as this session's command instead of typing into a
+    # default session whose shell may not yet be ready. rc files run first,
+    # then the guarded cd, then the Agent. Retain an interactive shell on exit;
+    # its usual rc files may intentionally choose a different directory.
+    local session_shell=${SHELL:-/bin/zsh} session_script session_command
+    session_script="$line; exec ${(qq)session_shell} -i"
+    session_command="${(qq)session_shell} -ilc ${(qq)session_script}"
+    osascript - "$session_command" "$OPEN_IN" <<'EOF'
 on run argv
   set cmd to item 1 of argv
   set openIn to item 2 of argv
-  set wasRunning to application "iTerm" is running
   tell application "iTerm"
     activate
-    if not wasRunning then delay 0.8
-    if (count of windows) = 0 then
-      set w to (create window with default profile)
-    else if not wasRunning then
-      set w to current window
-    else if openIn is "tab" then
-      set w to current window
-      tell w to create tab with default profile
+    if openIn is "tab" and (count of windows) > 0 then
+      tell current window to create tab with default profile command cmd
     else
-      set w to (create window with default profile)
+      create window with default profile command cmd
     end if
-    tell current session of w to write text cmd
   end tell
 end run
 EOF
@@ -185,19 +210,9 @@ EOF
     osascript - "$line" <<'EOF'
 on run argv
   set cmd to item 1 of argv
-  set wasRunning to application "Terminal" is running
   tell application "Terminal"
     activate
-    if not wasRunning then
-      delay 0.5
-      try
-        do script cmd in front window
-      on error
-        do script cmd
-      end try
-    else
-      do script cmd
-    end if
+    do script cmd
   end tell
 end run
 EOF
@@ -224,8 +239,14 @@ app_path() {
 }
 
 open_claude_app() {
-  local dir=$1
+  local dir=$1 url
   app_path com.anthropic.claudefordesktop /Applications/Claude.app >/dev/null || die "未找到 Claude 桌面版"
+  if [[ -n ${AI_HERE_TASK_PROMPT_FILE:-} ]]; then
+    url=$(run_task desktop-url --tool claude-app --cwd "$dir" --prompt-file "$AI_HERE_TASK_PROMPT_FILE") || return $?
+    log "claude-app dir=$dir prompt-file=$AI_HERE_TASK_PROMPT_FILE via composer-link"
+    launch_url "$url"
+    return $?
+  fi
   log "claude-app dir=$dir"
   launch_url "claude://code/new?folder=$(urlencode "$dir")&source=services"
 }
@@ -235,6 +256,14 @@ open_workbuddy() {
   local dir=$1 prompt url hint
   app_path com.tencent.workbuddy.mac /Applications/WorkBuddy.app >/dev/null || die "未找到 WorkBuddy（/Applications/WorkBuddy.app）"
   prompt=${WORKBUDDY_PROMPT//\%s/${dir:t}}
+  if [[ -n ${AI_HERE_TASK_PROMPT_FILE:-} ]]; then
+    # WorkBuddy keeps a short local-file prefill; no clipboard or automatic send.
+    url=$(run_task desktop-url --tool workbuddy --cwd "$dir" --prompt-file "$AI_HERE_TASK_PROMPT_FILE") || return $?
+    [[ -n $WORKBUDDY_MODE ]] && url+="&welcomeMode=$(urlencode "$WORKBUDDY_MODE")"
+    log "workbuddy dir=$dir prompt-file=$AI_HERE_TASK_PROMPT_FILE via composer-link"
+    launch_url "$url"
+    return $?
+  fi
   hint=$(handoff_prompt "$dir") || return $?
   [[ -n $hint ]] && prompt+=$'\n\n'"$hint"
   url="workbuddy://task?action=start&cwd=$(urlencode "$dir")&prompt=$(urlencode "$prompt")"
@@ -244,7 +273,14 @@ open_workbuddy() {
 }
 
 open_codex_app() {
-  local dir=$1 codex
+  local dir=$1 codex url
+  if [[ -n ${AI_HERE_TASK_PROMPT_FILE:-} ]]; then
+    # Official composer link: prefill only. No clipboard, UI automation or send.
+    url=$(run_task desktop-url --tool codex-app --cwd "$dir" --prompt-file "$AI_HERE_TASK_PROMPT_FILE") || return $?
+    log "codex-app dir=$dir prompt-file=$AI_HERE_TASK_PROMPT_FILE via composer-link"
+    launch_url "$url"
+    return $?
+  fi
   codex=$(resolve_bin codex) || die "未找到 Codex CLI 或桌面版内置命令，请安装 Codex 或检查应用位置。"
   log "codex-app dir=$dir via $codex"
   [[ -n ${AI_HERE_DRY_RUN:-} ]] && { print -r -- "${(qq)codex} app ${(qq)dir}"; return 0 }
@@ -253,7 +289,7 @@ open_codex_app() {
 }
 
 # ---- doctor：给人和 Agent 看的安装状态 ----
-SERVICE_TITLES=("Claude Code CLI" "Codex CLI" "Claude Code App" "Codex App" "WorkBuddy")
+SERVICE_TITLES=("AI Here · 带上下文启动" "Claude Code CLI" "Codex CLI" "Claude Code App" "Codex App" "WorkBuddy")
 
 doctor() {
   local json=0; [[ ${1:-} == --json ]] && json=1
@@ -288,11 +324,22 @@ doctor() {
 
 # ---- 参数解析 ----
 mode=${1:-}
-[[ -z $mode || $mode == -h || $mode == --help ]] && { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 }
+[[ -z $mode || $mode == -h || $mode == --help ]] && { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 }
 [[ $mode == -v || $mode == --version ]] && { print "ai-here $AI_HERE_VERSION"; exit 0 }
 shift
 [[ $mode == doctor ]] && { doctor "${1:-}"; exit 0 }
 [[ $mode == handoff ]] && { handoff_command "$@"; exit $? }
+[[ $mode == task ]] && { run_task "$@"; exit $? }
+if [[ $mode == compose ]]; then
+  panel="$HOME/Applications/AI Here.app"
+  [[ -d $panel ]] || die "未找到 AI Here.app，请运行 install.sh。"
+  if (( $# )); then
+    open -a "$panel" -- "$@"
+  else
+    open "$panel"
+  fi
+  exit $?
+fi
 
 typeset -a targets dirs
 if (( $# )); then
@@ -334,9 +381,9 @@ fi
 
 for d in "${dirs[@]}"; do
   case $mode in
-    claude-cli)      run_in_terminal "$d" "$CLAUDE_CMD" ;;
+    claude-cli)      suffix=$(task_cli_suffix claude-cli) || exit $?; run_in_terminal "$d" "$CLAUDE_CMD$suffix" ;;
     claude-continue) run_in_terminal "$d" "$CLAUDE_CMD --continue" ;;
-    codex-cli)       run_codex_terminal "$d" ;;
+    codex-cli)       suffix=$(task_cli_suffix codex-cli) || exit $?; run_codex_terminal "$d" "$suffix" ;;
     codex-resume)    run_codex_terminal "$d" " resume --last" ;;
     claude-app)      open_claude_app "$d" ;;
     codex-app)       open_codex_app "$d" ;;

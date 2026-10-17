@@ -9,6 +9,9 @@
 
 跨 Codex、Claude Code、WorkBuddy 和 ChatGPT 的工作交接用法见 [工作交接指南](docs/cross-agent-handoff.md)。
 
+1.7.1 支持 Finder 多选文件带入原生附件栏；左侧核对、移除文件，右侧按命令行与桌面应用分组，两个图标按钮悬停显示文字：[直接开始 / 总结并接续](docs/context-launch.md)。总结入口预置内置 `ai-here-handoff` 技能提示，核验并保存本地交接后继续对话。
+
+
 首次启用、切换 Agent、ChatGPT 结果带回和隔天接续等具体步骤，见 [交接用户场景与操作路径](docs/handoff-user-scenarios.md)。
 
 ---
@@ -30,47 +33,49 @@ cd ai-here
 ai-here doctor          # check what was found and installed
 ```
 
-Requirements: macOS 13+ (tested on macOS 26), with [Claude Code](https://docs.claude.com/en/docs/claude-code) and/or [Codex CLI](https://github.com/openai/codex) installed. The desktop modes need the Claude / Codex / WorkBuddy desktop apps. No Xcode, no code signing — just shell, Automator and AppleScript.
+Requirements: macOS 13+ (tested on macOS 26), with [Claude Code](https://docs.claude.com/en/docs/claude-code) and/or [Codex CLI](https://github.com/openai/codex) installed. The desktop modes need the Claude / Codex / WorkBuddy desktop apps. Building the native UI requires Apple Command Line Tools (swiftc), without the full Xcode app. Local ad-hoc signing is handled by the installer.
 
 ### Three ways in
 
 | When | Do |
 |---|---|
+| Multiple files are selected | Click **AI Here** in the Finder toolbar → check the attachment rail → choose an Agent action |
 | A folder is selected | Right-click → **Services** → `Claude Code CLI` / `Codex CLI` / `Claude Code App` / `Codex App` / `WorkBuddy` |
-| You're already *inside* a folder (nothing selected) | Click the **AI Here** button in the Finder toolbar → pick a tool (also offers "continue last session") |
+| You're already *inside* a folder (nothing selected) | Click the **AI Here** button in the Finder toolbar → pick a tool, then Start directly or Summarize & continue |
 | In a terminal, or from an AI agent | `ai-here claude-cli .`, `ai-here codex-app ~/project`, `ai-here workbuddy ~/project`, … |
 
 Menu labels: `CLI` = command-line tool, `App` = desktop app. The `WorkBuddy` item is only added when WorkBuddy is installed. To use English labels, edit the `ACTIONS` list at the top of `install.sh` (and the matching names in `uninstall.sh`), then re-run `./install.sh`.
 
 To add the toolbar button, hold **⌘** and drag `~/Applications/AI Here.app` onto any Finder window's toolbar. You can also drop folders onto it.
 
-The toolbar app has its own folder-and-terminal icon. Its chooser shows the corresponding Claude, Codex and WorkBuddy icons beside the seven launch actions, plus workspace handoff actions. Icons are copied from locally installed apps during installation; missing apps use macOS system symbols. Double-click an action to open it directly, or use arrow keys to select, Return to confirm, and Esc to cancel.
+The native window shows selected Finder files in a removable attachment rail and groups five launch targets into CLI and desktop apps. Each row has two icon buttons: an arrow for **Start directly**, and a document with magnifier for **Summarize & continue**. Hover reveals labels; keyboard and accessibility names are provided. Without files, the first opens a conversation normally. With files, it passes an explicit local material list and asks the Agent to read it before waiting for your task. The second sends a fixed instruction to use the bundled local `ai-here-handoff` skill, verify workspace records and current files, append a handoff document, and report readiness for your next instruction. It does not read other tools' private chat histories or automatically execute old next steps.
+
+CLI tools receive the prompt as one argument; Codex CLI additionally receives detected PNG/JPEG/WebP images through its image option. Other material remains an explicit local reference, not an uploaded attachment. Codex and Claude desktop apps open a new conversation with the workspace and prompt pre-filled. Long prompts use a short instruction to read the private task snapshot; WorkBuddy always uses this snapshot instruction. Review and send in the target app; no clipboard copy is needed. Opening a tool is not proof it completed the summary. See the [launch guide](docs/context-launch.md).
 
 ### Workspace handoffs
 
-Pick **启用 / 修复工作交接** (Enable / repair handoff) in the toolbar chooser, or run:
+Handoff management remains available in the CLI:
 
 ```bash
 ai-here handoff init ~/project --instructions
+ai-here handoff open ~/project
+ai-here handoff copy ~/project
+ai-here task summarize --cwd ~/project --tool codex-cli
 ```
 
-This creates `.ai-here/index.md`, a handoff template and a record folder. `--instructions` appends a small managed block to `AGENTS.md` and `CLAUDE.md`, preserving existing instructions. It asks the agent to read relevant records at the start and write a brief, evidence-based handoff at the end. Add `--ignore` to keep `.ai-here/` out of Git in private projects. Handoff commands require Python 3.9+ and no third-party packages.
-
-Once enabled, the chooser offers **查看工作交接** (View handoff) and **复制交接摘要 · 用于 ChatGPT 等** (Copy summary for ChatGPT). WorkBuddy's pre-filled prompt points to the index; CLI sessions show a reading reminder. For ordinary ChatGPT conversations, paste the copied summary; a local Work session can read the same workspace files when access is granted. Closing an app does not capture or synchronize its conversation history.
-
-See the [handoff guide](docs/cross-agent-handoff.md) for record creation, editing, privacy and tool boundaries.
+The summary skill writes a new local record through the existing handoff commands; it does not overwrite project rules or initialize handoffs until the receiving Agent executes the instruction. With no saved progress, it records an initial verified state and explicitly marks missing conversation evidence. The built-in skill is installed with AI Here, separate from personal skills. See the [handoff guide](docs/cross-agent-handoff.md).
 
 ### What each mode does
 
 | Mode | How |
 |---|---|
-| `claude-cli` / `codex-cli` | Opens a new iTerm window (falls back to Terminal.app) and runs `cd <folder> && claude` (or `codex`) in your interactive shell, so your PATH and aliases work as usual |
+| `claude-cli` / `codex-cli` | Opens a new iTerm window (falls back to Terminal.app) and runs the login shell, changes into the folder first, then starts Claude or Codex; iTerm creates the session with this command instead of typing into an existing shell |
 | `claude-continue` / `codex-resume` | `claude --continue` / `codex resume --last` |
 | `claude-app` | Opens `claude://code/new?folder=<folder>`, which starts a new session in the Claude desktop app's Code tab, rooted at that folder |
 | `codex-app` | Runs `codex app <folder>`, which opens the folder as a workspace in the Codex desktop app |
 | `workbuddy` | Opens `workbuddy://task?action=start&cwd=<folder>&prompt=…`: WorkBuddy starts a new task with that folder as its working directory. The prompt is only pre-filled, never sent |
 
-Selecting several folders opens one session each. If a file is selected, its parent folder is used.
+The toolbar panel starts one conversation per action and asks you to choose a directory when several folders are selected. Legacy direct services and CLI commands retain their multiple-directory behavior. A selected file supplies its parent directory.
 
 ### Configuration
 
@@ -125,31 +130,40 @@ cd ai-here
 ai-here doctor          # 查看检测到的工具和已安装的右键菜单
 ```
 
-依赖：macOS 13+（在 macOS 26 上测试），已安装 [Claude Code](https://docs.claude.com/en/docs/claude-code) 和/或 [Codex CLI](https://github.com/openai/codex)；桌面版模式需要对应的 Claude / Codex / WorkBuddy 桌面应用。无需 Xcode、无需签名，纯 shell + Automator + AppleScript。
+依赖：macOS 13+（在 macOS 26 上测试），已安装 [Claude Code](https://docs.claude.com/en/docs/claude-code) 和/或 [Codex CLI](https://github.com/openai/codex)；桌面版模式需要对应的 Claude / Codex / WorkBuddy 桌面应用。构建原生界面需要 Apple Command Line Tools（swiftc），无需完整 Xcode；安装脚本自动完成本地签名。
 
 ### 三个入口
 
 | 场景 | 操作 |
 |---|---|
 | 选中了某个文件夹 | 右键 → **服务** → `Claude Code CLI` / `Codex CLI` / `Claude Code App` / `Codex App` / `WorkBuddy` |
-| 已经在某个文件夹里面（没选中任何东西） | 点 Finder 工具栏上的 **AI Here** 按钮 → 选择工具（也提供“继续上次会话”） |
+| 已经在某个文件夹里面（没选中任何东西） | 点 Finder 工具栏上的 **AI Here** 按钮 → 选择工具的“直接开始”或“总结并接续” |
 | 在终端里，或让 AI Agent 调用 | `ai-here claude-cli .`、`ai-here codex-app ~/项目`、`ai-here workbuddy ~/项目` 等 |
 
 `WorkBuddy` 菜单项只在检测到已安装 WorkBuddy 时才会添加。工具栏按钮的安装：按住 **⌘** 把 `~/Applications/AI Here.app` 拖到任意 Finder 窗口的工具栏上。也可以把文件夹直接拖到这个按钮上。
 
-工具栏应用使用独立的「文件夹 + 终端 + AI 星芒」图标。七个启动选项都有对应的 Claude、Codex 或 WorkBuddy 图标，并提供工作交接入口。安装时从本机应用读取图标；未安装的工具使用 macOS 系统图标。双击选项即可执行，也支持方向键选择、回车确认及 Esc 取消。
+原生窗口按命令行和桌面应用列出五个入口。每行右侧两个图标按钮：箭头表示 **直接开始**，文档放大镜表示 **总结并接续**；悬停显示文字提示，支持键盘与无障碍名称。左侧自动列出 Finder 选中的文件，可逐个移除；更换工作目录仍保留附件。不填写自由任务或选择交接记录。
+
+### 直接开始 / 总结并接续
+
+**直接开始**：没有附件时按原方式打开；有附件时带入完整本地文件清单，让 Agent 先核对并读取，再等待你给任务。
+
+**总结并接续**：预置提示，要求接收 Agent 使用随应用安装的 `ai-here-handoff` 本地技能，核验项目记录与当前文件、保存新的交接文档，再告知准备情况，等待你的下一步指令。没有落盘的其他 Agent 聊天不能被当作已知进展；没有交接时生成初始核验记录，明确未知项。
+
+两个动作都会带上附件清单。Codex CLI 的常规 PNG/JPEG/WebP 图片另外使用原生图片参数，其他材料作为本地路径供读取，不等于上传。CLI 接收完整提示；Codex App / Claude App 自动打开新对话并预填工作目录与提示；长提示使用读取私有任务快照的短指令，WorkBuddy 始终使用快照指令。无需复制粘贴，在目标应用确认后发送；Claude 可能另需确认目录访问。按钮点击成功不代表总结已经完成。详细步骤见[启动指南](docs/context-launch.md)。
 
 ### 跨 Agent 工作交接
 
-点工具栏的 **启用 / 修复工作交接**，或者运行：
+高级管理操作保留在命令行：
 
 ```bash
 ai-here handoff init ~/项目 --instructions
+ai-here handoff open ~/项目
+ai-here handoff copy ~/项目
+ai-here task summarize --cwd ~/项目 --tool codex-cli
 ```
 
-系统会创建 `.ai-here/index.md`、交接模板与记录目录。`--instructions` 在保留原有内容的前提下，给 `AGENTS.md`、`CLAUDE.md` 追加简短入口：让 Agent 开始时阅读相关交接，结束前写入已完成事项、证据与下一步。私密项目可加 `--ignore` 将 `.ai-here/` 排除在 Git 之外。交接命令需要 Python 3.9+，无需安装第三方包。
-
-启用后，工具栏提供 **查看工作交接** 和 **复制交接摘要 · 用于 ChatGPT 等**。WorkBuddy 的预填提示词会带读取路径，CLI 会显示交接提醒。普通 ChatGPT 对话粘贴摘要即可；有本地目录权限的 Work 会话可读取同一份文件。关掉软件不会自动采集或同步聊天历史，当前 Agent 需在任务结束前写交接。
+总结技能使用现有命令保存本地交接，未执行提示之前不初始化项目，不改写项目规则。已有 `AGENTS.md`、`CLAUDE.md` 保持原内容。技能作为软件内置资源安装，不向个人 Skills 目录添加副本。
 
 写入、编辑、刷新和各工具的接入边界见[工作交接指南](docs/cross-agent-handoff.md)。
 
@@ -157,13 +171,13 @@ ai-here handoff init ~/项目 --instructions
 
 | 模式 | 实现 |
 |---|---|
-| `claude-cli` / `codex-cli` | 在 iTerm（没有则用系统终端）新窗口里 `cd <目录> && claude`（或 `codex`），走你的交互式 shell，PATH/别名与平时一致 |
+| `claude-cli` / `codex-cli` | 在新终端中先进入目标目录，再启动 Claude 或 Codex；iTerm 在创建会话时指定登录 shell 命令，避免向未准备好的会话模拟键入 |
 | `claude-continue` / `codex-resume` | `claude --continue` / `codex resume --last` |
-| `claude-app` | 打开 `claude://code/new?folder=<目录>`，Claude 桌面版的 Code 标签页直接以该目录新建会话 |
-| `codex-app` | 执行 `codex app <目录>`，Codex 桌面版直接打开该工作区 |
+| `claude-app` | 打开 `claude://code/new?folder=<目录>`；带上下文时追加 `q` 预填提示，用户确认目录后发送 |
+| `codex-app` | 普通入口执行 `codex app <目录>`；带上下文时通过 `codex://new?path=<目录>&prompt=…` 新建并预填对话 |
 | `workbuddy` | 打开 `workbuddy://task?action=start&cwd=<目录>&prompt=…`，WorkBuddy 以该文件夹为工作目录新建任务；提示词只预填、不会自动发送 |
 
-选中多个文件夹时会各开一个；选中的是文件则使用其所在文件夹。
+桌面面板一次动作只启动一个对话；多目录需选择其中一个。旧的工具快捷服务与 CLI 保留多目录启动行为。选中的是文件则使用其所在文件夹。
 
 ### 配置
 
@@ -235,7 +249,7 @@ ai-here handoff export <path>              # 输出摘要 / export summary
 `doctor --json` 示例 / example:
 
 ```json
-{"version":"1.3.1","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
+{"version":"1.7.1","claude_cli":"/Users/you/.local/bin/claude","codex_cli":"/Users/you/.local/bin/codex",
  "claude_app":"/Applications/Claude.app","codex_app":"/Applications/Codex.app","workbuddy_app":"/Applications/WorkBuddy.app",
  "terminal":"iTerm","config":"/Users/you/.config/ai-here/config","handoff_runtime":"/usr/bin/python3","services":["Claude Code CLI","…","WorkBuddy"]}
 ```
@@ -255,11 +269,13 @@ An empty string means the tool was not found. Modes are listed above.
 
 ```
 bin/ai-here               Core launcher; every entry point calls it  核心启动脚本（所有入口最终都调用它）
-src/AIHere.applescript    Finder toolbar button (compiled to AI Here.app)  Finder 工具栏按钮
+src/AIHere.applescript    Finder entry + launch routing  Finder 入口与启动逻辑
+src/AIHereUI.swift        Native AppKit window + icon actions  原生窗口与图标按钮
 src/AIHere.icns           App icon (all macOS sizes)  应用图标
 src/AIHere.png            App icon source / preview  应用图标原图
 src/export-tool-icons.js  Copies locally installed tool icons into the app  提取本机工具图标
 lib/handoff.py            Workspace handoff records, index and exports  工作交接管理
+lib/task_request.py       Context requests, prompt snapshots and dispatch  带上下文启动
 tests/                    Handoff and launcher integration checks  交接与启动器测试
 install.sh                Generates the Finder services, toolbar app and CLI  安装
 uninstall.sh              Uninstaller  卸载
